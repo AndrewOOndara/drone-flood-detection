@@ -1,4 +1,4 @@
-#!/Users/andrewondara/drone-flood-detection/venv/bin/python3.10
+#!/Users/andrewondara/drone-flood-detection/server/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

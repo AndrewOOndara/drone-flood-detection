@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<robot name="tree">
+
+  <!-- Define the trunk of the tree -->
+  <link name="trunk">
+    <visual>
+      <geometry>
+        <cylinder radius="0.1" length="1.0"/>
+      </geometry>
+      <material name="brown">
+        <color rgba="0.545 0.271 0.075 1"/> <!-- Brown color for the trunk -->
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.1" length="1.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Define the canopy of the tree -->
+  <link name="canopy">
+    <visual>
+      <geometry>
+        <sphere radius="0.5"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0.0 0.5 0.0 1"/> <!-- Green color for the canopy -->
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.5"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Define the joint between the trunk and the canopy -->
+  <joint name="trunk_to_canopy" type="fixed">
+    <parent link="trunk"/>
+    <child link="canopy"/>
+    <origin xyz="0 0 0.5"/> <!-- Position the canopy above the trunk -->
+  </joint>
+
+</robot>
