@@ -6,7 +6,7 @@ import os
 import time
 import random
 import math
-from rrt import apply_motion_planning  # Import the motion planning function
+from motion_planning import apply_motion_planning  # Import the motion planning function
 
 class DroneSimulation:
     def __init__(self):
@@ -38,7 +38,7 @@ class DroneSimulation:
         self.start_time = time.time()
 
         # Visualize sensing radius
-        self.sensing_sphere_id = self.add_sensing_sphere(self.sensing_radius)
+        self.sensing_sphere_ids = self.add_sensing_spheres(self.sensing_radius)
 
     def load_ground(self):
         ground_uid = p.loadURDF("plane_transparent.urdf", [0, 0, 0])
@@ -58,11 +58,10 @@ class DroneSimulation:
         for _ in range(num_drones):
             x = random.uniform(-10, 10)
             y = random.uniform(-10, 10)
-            z = 5
+            z = 3
             drone_id = p.loadURDF(drone_urdf, basePosition=[x, y, z], useFixedBase=False)
             drone_ids.append(drone_id)
         return drone_ids
-
 
     def create_random_trees(self, num_trees):
         tree_ids = []
@@ -90,6 +89,12 @@ class DroneSimulation:
             flood_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=col_shape, baseVisualShapeIndex=visual_shape, basePosition=[x, y, thickness / 2])
             flood_ids.append(flood_id)
         return flood_ids
+    
+    def add_sensing_spheres(self, radius):
+        spheres = []
+        for _ in range(self.num_drones):
+            spheres.append(self.add_sensing_sphere(radius))
+        return spheres
 
     def add_sensing_sphere(self, radius):
         # Creates a transparent sphere to represent the sensing radius
@@ -98,12 +103,13 @@ class DroneSimulation:
         sphere_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=col_sphere, baseVisualShapeIndex=vis_sphere, basePosition=[0, 0, 0])
         return sphere_id
 
-    def update_sensing_sphere_position(self, drone_ids):
+    def update_sensing_sphere_position(self, drone_ids, sensing_sphere_ids):
         # Update the sphere position to match the drone's current position
         for i in range(len(drone_ids)):
             drone_id = drone_ids[i]
+            sensing_sphere_id = sensing_sphere_ids[i]
             drone_position = p.getBasePositionAndOrientation(drone_id)[0]
-            p.resetBasePositionAndOrientation(self.sensing_sphere_id, drone_position, [0, 0, 0, 1])
+            p.resetBasePositionAndOrientation(sensing_sphere_id, drone_position, [0, 0, 0, 1])
 
     def check_objects_in_radius(self, drone_ids):
         # Detect objects within the sensing radius
@@ -121,7 +127,7 @@ class DroneSimulation:
             current_time = time.time() - self.start_time
 
             # Update the sensing sphere to follow the drone
-            self.update_sensing_sphere_position(self.drone_ids)
+            self.update_sensing_sphere_position(self.drone_ids, self.sensing_sphere_ids)
             self.check_objects_in_radius(self.drone_ids)  # Check for obstacles in radius
 
             # Calculate the center position for orbiting

@@ -4,7 +4,7 @@ import pybullet_data
 import time
 import random
 import math
-from rrt import apply_motion_planning  # Import the motion planning function
+from motion_planning import apply_motion_planning  # Import the motion planning function
 
 class DroneSimulation:
     def __init__(self):
