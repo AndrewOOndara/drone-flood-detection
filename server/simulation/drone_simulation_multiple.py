@@ -17,14 +17,16 @@ class DroneSimulation:
         
         # Load environment elements
         self.load_ground()
-        self.drone_id = self.load_drone()
+        # self.drone_id = self.load_drone()
+        self.num_drones = 2
+        self.drone_ids = self.load_multiple_drones(self.num_drones)
         
         # Parameters
         self.radius = 5
         self.altitude = 2
         self.speed = 10
         self.orbit_speed = 10
-        self.sensing_radius = 8  # Define sensing radius
+        self.sensing_radius = 2  # Define sensing radius
 
         # Initialize obstacles
         self.trees = self.create_random_trees(20)
@@ -49,6 +51,18 @@ class DroneSimulation:
             raise ValueError("Failed to load the drone model. Check the URDF path and file integrity.")
         time.sleep(1)
         return drone_id
+    
+    def load_multiple_drones(self, num_drones):
+        drone_urdf = "./urdf/quadroter.urdf"
+        drone_ids = []
+        for _ in range(num_drones):
+            x = random.uniform(-10, 10)
+            y = random.uniform(-10, 10)
+            z = 5
+            drone_id = p.loadURDF(drone_urdf, basePosition=[x, y, z], useFixedBase=False)
+            drone_ids.append(drone_id)
+        return drone_ids
+
 
     def create_random_trees(self, num_trees):
         tree_ids = []
@@ -84,18 +98,22 @@ class DroneSimulation:
         sphere_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=col_sphere, baseVisualShapeIndex=vis_sphere, basePosition=[0, 0, 0])
         return sphere_id
 
-    def update_sensing_sphere_position(self):
+    def update_sensing_sphere_position(self, drone_ids):
         # Update the sphere position to match the drone's current position
-        drone_position = p.getBasePositionAndOrientation(self.drone_id)[0]
-        p.resetBasePositionAndOrientation(self.sensing_sphere_id, drone_position, [0, 0, 0, 1])
+        for i in range(len(drone_ids)):
+            drone_id = drone_ids[i]
+            drone_position = p.getBasePositionAndOrientation(drone_id)[0]
+            p.resetBasePositionAndOrientation(self.sensing_sphere_id, drone_position, [0, 0, 0, 1])
 
-    def check_objects_in_radius(self):
+    def check_objects_in_radius(self, drone_ids):
         # Detect objects within the sensing radius
-        drone_position = p.getBasePositionAndOrientation(self.drone_id)[0]
-        for obstacle_position in self.obstacles:
-            distance = np.linalg.norm(np.array(drone_position) - np.array(obstacle_position))
-            if distance <= self.sensing_radius:
-                print(f"Object detected within radius at position {obstacle_position}, distance {distance:.2f}")
+        for i in range(len(drone_ids)):
+            drone_id = drone_ids[i]
+            drone_position = p.getBasePositionAndOrientation(drone_id)[0]
+            for obstacle_position in self.obstacles:
+                distance = np.linalg.norm(np.array(drone_position) - np.array(obstacle_position))
+                if distance <= self.sensing_radius:
+                    print(f"Object detected within radius at position {obstacle_position}, distance {distance:.2f}")
 
     def run_simulation(self):
         while True:
@@ -103,8 +121,8 @@ class DroneSimulation:
             current_time = time.time() - self.start_time
 
             # Update the sensing sphere to follow the drone
-            self.update_sensing_sphere_position()
-            self.check_objects_in_radius()  # Check for obstacles in radius
+            self.update_sensing_sphere_position(self.drone_ids)
+            self.check_objects_in_radius(self.drone_ids)  # Check for obstacles in radius
 
             # Calculate the center position for orbiting
             center_x = math.cos(self.orbit_speed * current_time) * 3
@@ -117,7 +135,9 @@ class DroneSimulation:
             target_position = [target_x, target_y, self.altitude]
 
             # Use motion planning to move towards the target while avoiding obstacles
-            apply_motion_planning(self.drone_id, target_position, self.obstacles, speed=50)
+            for i in range(len(self.drone_ids)):
+                drone_id = self.drone_ids[i]
+                apply_motion_planning(drone_id, target_position, self.obstacles, speed=50)
 
             # Delay for simulation timing
             time.sleep(1./240.)
