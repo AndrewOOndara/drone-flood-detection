@@ -16,8 +16,7 @@ class DroneSimulation:
         p.setGravity(0, 0, -9.81)
         
         # Load environment elements
-        self.load_ground()
-        # self.drone_id = self.load_drone()
+        self.ground = self.load_ground()
         self.num_drones = 2
         self.drone_ids = self.load_multiple_drones(self.num_drones)
         
@@ -43,6 +42,7 @@ class DroneSimulation:
     def load_ground(self):
         ground_uid = p.loadURDF("plane_transparent.urdf", [0, 0, 0])
         p.changeVisualShape(ground_uid, -1, rgbaColor=[0, 1, 0, 1])  # Solid green color
+        return ground_uid
 
     def load_drone(self):
         drone_urdf = "./urdf/quadroter.urdf"
@@ -120,6 +120,8 @@ class DroneSimulation:
                 distance = np.linalg.norm(np.array(drone_position) - np.array(obstacle_position))
                 if distance <= self.sensing_radius:
                     print(f"Object detected within radius at position {obstacle_position}, distance {distance:.2f}")
+                    
+
 
     def run_simulation(self):
         while True:
@@ -143,7 +145,11 @@ class DroneSimulation:
             # Use motion planning to move towards the target while avoiding obstacles
             for i in range(len(self.drone_ids)):
                 drone_id = self.drone_ids[i]
-                apply_motion_planning(drone_id, target_position, self.obstacles, speed=50)
+                drone_position = p.getBasePositionAndOrientation(drone_id)[0]
+                for obstacle_position in self.obstacles:
+                    distance = np.linalg.norm(np.array(drone_position) - np.array(obstacle_position))
+                    if distance <= self.sensing_radius:
+                        apply_motion_planning(drone_id, target_position, self.obstacles, speed=50)
 
             # Delay for simulation timing
             time.sleep(1./240.)
