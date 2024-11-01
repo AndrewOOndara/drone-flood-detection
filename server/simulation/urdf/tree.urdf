@@ -13,7 +13,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length="1.0"/>
+        <cylinder radius="0.1" length="2.0"/>
       </geometry>
     </collision>
   </link>
@@ -39,7 +39,7 @@
   <joint name="trunk_to_canopy" type="fixed">
     <parent link="trunk"/>
     <child link="canopy"/>
-    <origin xyz="0 0 0.5"/> <!-- Position the canopy above the trunk -->
+    <origin xyz="0 0 1.0"/> <!-- Position the canopy above the trunk -->
   </joint>
 
 </robot>

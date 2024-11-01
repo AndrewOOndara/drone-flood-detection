@@ -12,18 +12,22 @@ def nearest_color(img_path = ""):
     # Define a set of target colors to match (RGB values)
     target_colors = np.array([
         [0, 255, 0],    # Green
-        [0, 0, 255],    # Blue
+        [0, 0, 50],    # Blue
     ])
 
     # Use KDTree for nearest neighbor search
     kdtree = KDTree(target_colors)
     _, idx = kdtree.query(average_color)
+    print(idx)
 
     nearest_color = target_colors[idx]
 
     print("Average color of the image:", average_color)
     print("Nearest color match:", nearest_color)
     # Checks if nearest_color is blue
-    return nearest_color == [0, 0, 255]
+    return nearest_color == [0, 0, 50]
+
+
+print(nearest_color("/Users/andrewondara/drone-flood-detection/server/simulation/drone_images/aerial_view_1730416454.png"))
 
     
