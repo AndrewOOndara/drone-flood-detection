@@ -16,7 +16,7 @@ class Drone:
         self.orbit_speed = orbit_speed
         self.center_position = [random.uniform(-10, 10), random.uniform(-10, 10), self.altitude]  # Random center
 
-    def update_position(self, current_time, drones):
+    def update_position(self, current_time, drones, obstacles):
         # Calculate the drone's target position based on its orbit parameters
         center_x = math.cos(self.orbit_speed * current_time) * 3 + self.center_position[0]
         center_y = math.sin(self.orbit_speed * current_time) * 3 + self.center_position[1]
@@ -29,9 +29,49 @@ class Drone:
 
         # Gather positions of other drones to avoid collisions
         other_drone_positions = [d.position for d in drones if d.drone_id != self.drone_id]
-        
+        nearby_obstacles = self.get_nearby_obstacles(obstacles, other_drone_positions)
+
+        # If there are nearby obstacles or drones, update the target position to avoid them
+        if nearby_obstacles:
+            target_position = self.avoid_obstacles(target_position, nearby_obstacles)
+
         # Use motion planning to move towards the target while avoiding obstacles, including other drones
-        apply_motion_planning(self.drone_id, target_position, other_drone_positions, speed=50)
+        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, speed=50)
+
+        # Update the drone's position
+        self.position = target_position
+
+    def get_nearby_obstacles(self, obstacles, other_drone_positions):
+        # This function checks which obstacles are within the sensing radius of the drone
+        nearby_obstacles = []
+        
+        # Check for nearby obstacles (trees, flooded areas, etc.)
+        for obstacle in obstacles:
+            distance = np.linalg.norm(np.array(self.position) - np.array(obstacle))
+            if distance < 5:  # Fixed sensing radius for avoidance, you can adjust this value
+                nearby_obstacles.append(obstacle)
+        
+        # Check for nearby drones (drone positions)
+        for drone_pos in other_drone_positions:
+            distance = np.linalg.norm(np.array(self.position) - np.array(drone_pos))
+            if distance < 5:  # Fixed sensing radius for avoiding other drones
+                nearby_obstacles.append(drone_pos)
+
+        return nearby_obstacles
+
+    def avoid_obstacles(self, target_position, nearby_obstacles):
+        # If there are nearby obstacles or drones, adjust the target position to avoid them
+        for obstacle in nearby_obstacles:
+            # Simple avoidance: adjust target position to steer away from obstacle
+            avoidance_vector = np.array(self.position) - np.array(obstacle)
+            avoidance_vector /= np.linalg.norm(avoidance_vector)  # Normalize the vector
+            avoidance_vector *= 0.5  # Scale the avoidance distance
+
+            # Adjust the target position by steering away from the obstacle
+            target_position = np.array(target_position) + avoidance_vector
+            target_position = target_position.tolist()
+
+        return target_position
 
     def get_position(self):
         return self.position
@@ -133,7 +173,7 @@ class DroneSimulation:
 
             # Update position of each drone independently
             for drone in self.drones:
-                drone.update_position(current_time, self.drones)
+                drone.update_position(current_time, self.drones, self.obstacles)
 
             # Delay for simulation timing
             time.sleep(1./240.)
