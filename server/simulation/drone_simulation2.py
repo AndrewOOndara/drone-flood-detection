@@ -7,7 +7,7 @@ import math
 from motion_planning2 import apply_motion_planning  # Import the motion planning function
 
 class Drone:
-    def __init__(self, drone_id, start_position, radius, altitude, speed, orbit_speed):
+    def __init__(self, drone_id, start_position, radius, altitude, speed, orbit_speed, sensing_radius):
         self.drone_id = drone_id
         self.position = start_position
         self.radius = radius
@@ -15,6 +15,27 @@ class Drone:
         self.speed = speed
         self.orbit_speed = orbit_speed
         self.center_position = [random.uniform(-10, 10), random.uniform(-10, 10), self.altitude]  # Random center
+        self.sensing_radius = sensing_radius
+        
+        # Create the translucent red sphere to visualize the drone
+        self.sphere_id = self.create_red_sphere(start_position)
+
+    def create_red_sphere(self, position):
+        # Create a translucent red sphere at the initial drone position
+        sphere_radius = 0.5  # Radius of the sphere
+        rgba_color = [1, 0, 0, 0.5]  # Red color with 50% transparency
+        sphere_visual_shape = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=rgba_color)
+        
+        # Create a kinematic multi-body with no mass (i.e., just a visual object)
+        sphere_id = p.createMultiBody(
+            baseMass=0,  # No mass, making the object kinematic
+            baseCollisionShapeIndex=-1,  # No collision for the sphere
+            baseVisualShapeIndex=sphere_visual_shape,  # Visual shape is the red sphere
+            basePosition=position  # Initial position of the sphere
+        )
+        
+        return sphere_id
+
 
     def update_position(self, current_time, drones, obstacles):
         # Calculate the drone's target position based on its orbit parameters
@@ -40,6 +61,14 @@ class Drone:
 
         # Update the drone's position
         self.position = target_position
+        
+        # Now, update the position of the sphere to match the drone's position
+        p.resetBasePositionAndOrientation(self.sphere_id, self.position, [0, 0, 0, 1])  # No rotation
+        pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
+
+        print(f"Drone {self.drone_id} position: {self.position}")
+        print(f"Sphere {self.sphere_id} position: {pos}")
+
 
     def get_nearby_obstacles(self, obstacles, other_drone_positions):
         # This function checks which obstacles are within the sensing radius of the drone
@@ -48,13 +77,13 @@ class Drone:
         # Check for nearby obstacles (trees, flooded areas, etc.)
         for obstacle in obstacles:
             distance = np.linalg.norm(np.array(self.position) - np.array(obstacle))
-            if distance < 5:  # Fixed sensing radius for avoidance, you can adjust this value
+            if distance < self.sensing_radius:  # Fixed sensing radius for avoidance, you can adjust this value
                 nearby_obstacles.append(obstacle)
         
         # Check for nearby drones (drone positions)
         for drone_pos in other_drone_positions:
             distance = np.linalg.norm(np.array(self.position) - np.array(drone_pos))
-            if distance < 5:  # Fixed sensing radius for avoiding other drones
+            if distance < self.sensing_radius:  # Fixed sensing radius for avoiding other drones
                 nearby_obstacles.append(drone_pos)
 
         return nearby_obstacles
@@ -91,6 +120,8 @@ class DroneSimulation:
         self.altitude = 2
         self.speed = 100
         self.orbit_speed = 100
+
+        self.sensing_radius = 5;
 
         # Initialize obstacles
         self.trees = self.create_random_trees(20)
@@ -134,7 +165,7 @@ class DroneSimulation:
             radius = random.uniform(3, 6)
             orbit_speed = random.uniform(1, 2)
             speed = random.uniform(50, 100)
-            drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, orbit_speed)
+            drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, orbit_speed, self.sensing_radius)
             drones.append(drone)
             drone_ids.append(drone_id)
         return drones
@@ -180,5 +211,5 @@ class DroneSimulation:
 
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
-    simulation = DroneSimulation(num_drones=5)
+    simulation = DroneSimulation(num_drones=1)
     simulation.run_simulation()
