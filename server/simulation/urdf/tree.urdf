@@ -3,6 +3,11 @@
 
   <!-- Define the trunk of the tree -->
   <link name="trunk">
+    <inertial>
+      <mass value="5.0"/> <!-- Set the mass of the trunk in kg -->
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+      <origin xyz="0 0 0.5"/> <!-- Center of mass -->
+    </inertial>
     <visual>
       <geometry>
         <cylinder radius="0.1" length="1.0"/>
@@ -13,13 +18,18 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length="2.0"/>
+        <cylinder radius="0.1" length="1.0"/>
       </geometry>
     </collision>
   </link>
 
   <!-- Define the canopy of the tree -->
   <link name="canopy">
+    <inertial>
+      <mass value="2.0"/> <!-- Set the mass of the canopy in kg -->
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+      <origin xyz="0 0 1.0"/> <!-- Center of mass -->
+    </inertial>
     <visual>
       <geometry>
         <sphere radius="0.5"/>

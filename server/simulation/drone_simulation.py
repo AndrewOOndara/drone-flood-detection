@@ -9,6 +9,7 @@ import os
 from scipy.spatial import KDTree
 from PIL import Image
 from rrt import apply_motion_planning 
+import matplotlib.pyplot as plt
 
 class DroneSimulation:
     def __init__(self):
@@ -40,24 +41,14 @@ class DroneSimulation:
         self.image_dir = "drone_images"
         os.makedirs(self.image_dir, exist_ok=True)
         self.flooded_coordinates = []
-        
-        # Initialize scanning parameters
-        self.scan_width = 20  # Width of the scanning area
-        self.scan_height = 20  # Height of the scanning area
-        self.grid_spacing = 5  # Spacing between points in the grid
-        self.current_row = 0  # Track the current row in the grid
-        self.current_col = 0  # Track the current column in the grid
-        self.direction = 1  # Direction of scanning (1 for right, -1 for left)
 
-        # Generate the scanning grid
-        self.scan_points = self.generate_scan_grid()
 
     def load_ground(self):
         ground_uid = p.loadURDF("plane_transparent.urdf", [0, 0, 0])
         p.changeVisualShape(ground_uid, -1, rgbaColor=[0, 1, 0, 1])  # Solid green color
 
     def load_drone(self):
-        drone_urdf = "./urdf/quadroter.urdf"
+        drone_urdf = "/Users/andrewondara/drone-flood-detection/server/simulation/urdf/quadroter.urdf"
         drone_id = p.loadURDF(drone_urdf, basePosition=[5, 0, 1], useFixedBase=False)
         if drone_id < 0:
             raise ValueError("Failed to load the drone model. Check the URDF path and file integrity.")
@@ -69,7 +60,7 @@ class DroneSimulation:
         for _ in range(num_trees):
             x, y = random.uniform(-10, 10), random.uniform(-10, 10)
             z = 0.5
-            tree_urdf = "./urdf/tree.urdf"
+            tree_urdf = "/Users/andrewondara/drone-flood-detection/server/simulation/urdf/tree.urdf"
             tree_id = p.loadURDF(tree_urdf, basePosition=[x, y, z])
             tree_ids.append(tree_id)
         return tree_ids
@@ -134,9 +125,10 @@ class DroneSimulation:
         # Convert from RGBA to BGR for OpenCV
         img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGBA2BGR)
         is_flooded = self.nearest_color(img_bgr)
-        print(is_flooded)
+        print(is_flooded.all())
         if is_flooded.all():
-            print(drone_position)
+            self.flooded_coordinates.append(drone_position)
+            print(f"Flooded area detected at {drone_position}")
         
         # Save the image to a folder
         timestamp = int(time.time())
@@ -144,6 +136,32 @@ class DroneSimulation:
         cv2.imwrite(filename, img_bgr)
         
         print(f"Aerial view image saved to {filename}")
+    def plot_flooded_areas(self):
+        # Extract x and y coordinates for flooded areas
+        x_coords = [coord[0] for coord in self.flooded_coordinates]
+        y_coords = [coord[1] for coord in self.flooded_coordinates]
+
+        # Create a scatter plot of the flood areas on the plane
+        plt.figure(figsize=(10, 10))
+        plt.scatter(x_coords, y_coords, c='blue', label="Flooded Area")
+        plt.xlim(-10, 10)
+        plt.ylim(-10, 10)
+        
+        # Add visual markers for trees
+        tree_x = [p.getBasePositionAndOrientation(tree)[0][0] for tree in self.trees]
+        tree_y = [p.getBasePositionAndOrientation(tree)[0][1] for tree in self.trees]
+        plt.scatter(tree_x, tree_y, c='green', marker='^', label="Trees")
+
+        # Labels and plot details
+        plt.title("Detected Flooded Areas on Plane")
+        plt.xlabel("X Position")
+        plt.ylabel("Y Position")
+        plt.legend()
+        plt.grid(True)
+
+        # Save or display the plot
+        plt.savefig("flooded_areas_map.png")
+        plt.show()
         
 
     def run_simulation(self):
@@ -168,6 +186,12 @@ class DroneSimulation:
             # Capture drone POV and save the image
             self.capture_aerial_view()
             time.sleep(1./240.)
+            # End condition for the simulation (e.g., run for 10 seconds)
+            if current_time > 20:  # Run for 10 seconds
+                break
+
+        # Plot the flooded areas after the simulation ends
+        self.plot_flooded_areas()
 
 # Run the drone simulation
 if __name__ == "__main__":
