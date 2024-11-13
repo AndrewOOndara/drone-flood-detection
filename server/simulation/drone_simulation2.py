@@ -211,5 +211,5 @@ class DroneSimulation:
 
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
-    simulation = DroneSimulation(num_drones=1)
+    simulation = DroneSimulation(num_drones=5)
     simulation.run_simulation()
