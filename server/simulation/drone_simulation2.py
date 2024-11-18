@@ -7,13 +7,12 @@ import math
 from motion_planning2 import apply_motion_planning  # Import the motion planning function
 
 class Drone:
-    def __init__(self, drone_id, start_position, radius, altitude, speed, orbit_speed, sensing_radius):
+    def __init__(self, drone_id, start_position, radius, altitude, speed, sensing_radius):
         self.drone_id = drone_id
         self.position = start_position
         self.radius = radius
         self.altitude = altitude
         self.speed = speed
-        self.orbit_speed = orbit_speed
         self.center_position = [random.uniform(-10, 10), random.uniform(-10, 10), self.altitude]  # Random center
         self.sensing_radius = sensing_radius
         
@@ -37,17 +36,8 @@ class Drone:
         return sphere_id
 
 
-    def update_position(self, current_time, drones, obstacles):
-        # Calculate the drone's target position based on its orbit parameters
-        center_x = math.cos(self.orbit_speed * current_time) * 3 + self.center_position[0]
-        center_y = math.sin(self.orbit_speed * current_time) * 3 + self.center_position[1]
-        center = [center_x, center_y, self.altitude]
-
-        target_x = center[0] + self.radius * math.cos(self.speed * current_time)
-        target_y = center[1] + self.radius * math.sin(self.speed * current_time)
-        target_z = self.altitude
-        target_position = [target_x, target_y, target_z]
-
+    def update_position(self, current_time, drones, obstacles, target_position):
+       
         # Gather positions of other drones to avoid collisions
         other_drone_positions = [d.position for d in drones if d.drone_id != self.drone_id]
         nearby_obstacles = self.get_nearby_obstacles(obstacles, other_drone_positions)
@@ -61,6 +51,10 @@ class Drone:
 
         # Update the drone's position
         self.position = target_position
+
+        for o in nearby_obstacles:
+            if o == target_position:
+                print("COLLISION")
         
         # Now, update the position of the sphere to match the drone's position
         p.resetBasePositionAndOrientation(self.sphere_id, self.position, [0, 0, 0, 1])  # No rotation
@@ -163,9 +157,8 @@ class DroneSimulation:
             
             # Initialize each drone with unique orbit parameters
             radius = random.uniform(3, 6)
-            orbit_speed = random.uniform(1, 2)
             speed = random.uniform(50, 100)
-            drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, orbit_speed, self.sensing_radius)
+            drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, self.sensing_radius)
             drones.append(drone)
             drone_ids.append(drone_id)
         return drones
@@ -204,7 +197,11 @@ class DroneSimulation:
 
             # Update position of each drone independently
             for drone in self.drones:
-                drone.update_position(current_time, self.drones, self.obstacles)
+                t_x = random.uniform(-10,10)
+                t_y = random.uniform(-10,10)
+                t_z = random.uniform(0,10)
+                target_position = (t_x,t_y,t_z)
+                drone.update_position(current_time, self.drones, self.obstacles, target_position)
 
             # Delay for simulation timing
             time.sleep(1./240.)
