@@ -54,6 +54,56 @@ class FloodCNN(nn.Module):
         x = self.classifier(x)
         return x
 
+class FloodEvaluator:
+    def __init__(self, model_path: str, device: torch.device = None):
+        """
+        Initialize the evaluator.
+
+        Args:
+            model_path (str): Path to the saved model weights (.pth file)
+            device (torch.device): Device to run the model on. If None, will use CUDA if available
+        """
+
+        if device is None:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
+
+        # Load and initialize the model
+        self.model: FloodCNN = FloodCNN().to(self.device)
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model.eval()
+
+        # Define the same transforms as used in training (except for augmentation)
+        self.transform = transforms.Compose([
+            transforms.Resize((128, 128)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                            std=[0.229, 0.224, 0.225])
+        ])
+
+    def evaluate_one(self, image: Image.Image) -> tuple[int, float]:
+        """
+        Evalutate an image to detect flooding.
+
+        Args:
+            image_path (str): Path to the image file
+
+        Returns:
+            tuple: (prediction (0 or 1), confidence score (0-1))
+        """
+        # Preprocess the image
+        image_tensor = (self.transform)(image).unsqueeze(0).to(self.device)  # Add batch dimension
+
+        # Get prediction
+        with torch.no_grad():
+            output = (self.model)(image_tensor).squeeze()
+            confidence = output.item()
+            prediction = 1 if confidence >= 0.5 else 0
+
+        return prediction, confidence
+
+
 def evaluate_image(image_path, model_path='best_model.pth', device=None):
     """
     Evaluate a single image using a trained model.
