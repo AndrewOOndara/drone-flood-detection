@@ -11,6 +11,10 @@ from PIL import Image
 from motion_planning2 import apply_motion_planning  # Import the motion planning function
 import matplotlib.pyplot as plt
 
+import requests
+import json
+
+
 class Drone:
     def __init__(self, drone_id, start_position, radius, altitude, speed, sensing_radius):
         self.drone_id = drone_id
@@ -284,6 +288,11 @@ class DroneSimulation:
         plt.savefig("flooded_areas_map.png")
         plt.show()
 
+    def get_waypoints(self):
+        response = requests.get(API_URL_BASE + "waypoints")
+        response.raise_for_status()
+        return response.json()
+
     def run_simulation(self):
         while True:
             p.stepSimulation()
@@ -312,5 +321,8 @@ class DroneSimulation:
 
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
+    API_URL_BASE: str = "http://168.5.37.177/api/v1/"   # wisha's address
     simulation = DroneSimulation(num_drones=5)
+    waypoints = simulation.get_waypoints()
+    print(waypoints)
     simulation.run_simulation()
