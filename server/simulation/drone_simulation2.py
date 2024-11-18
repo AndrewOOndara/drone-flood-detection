@@ -40,6 +40,8 @@ class Drone:
         
     #     return sphere_id
 
+    def getID(self):
+        return self.drone_id
 
     def update_position(self, current_time, drones, obstacles, target_position):
        
@@ -128,7 +130,7 @@ class DroneSimulation:
                          [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas]
         
         # Initialize drones
-        self.drones, self.drone_ids = self.create_drones(num_drones)
+        self.drones = self.create_drones(num_drones)
 
         # Start the simulation timer
         self.start_time = time.time()
@@ -167,7 +169,7 @@ class DroneSimulation:
             drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, self.sensing_radius)
             drones.append(drone)
             drone_ids.append(drone_id)
-        return drones, drone_ids
+        return drones
 
     def create_random_trees(self, num_trees):
         tree_ids = []
@@ -218,7 +220,8 @@ class DroneSimulation:
         return nearest_color == [0, 0, 50]
 
 
-    def capture_aerial_view(self, drone_id):
+    def capture_aerial_view(self, drone):
+        drone_id = drone.getID()
         # Set the folder for saving images
         output_folder = "drone_images"
         os.makedirs(output_folder, exist_ok=True)
@@ -287,11 +290,9 @@ class DroneSimulation:
             current_time = time.time() - self.start_time
 
             # Update position of each drone independently
-            for i in range(len(self.drones)):
-                drone = self.drones[i]
-                drone_id = self.drone_ids[i]
+            for drone in self.drones:
                 # Capture drone POV and save the image
-                self.capture_aerial_view(drone_id)
+                self.capture_aerial_view(drone)
 
                 # set new target coordinate
                 t_x = random.uniform(-10,10)
