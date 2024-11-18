@@ -4,7 +4,12 @@ import pybullet_data
 import time
 import random
 import math
+import cv2  
+import os 
+from scipy.spatial import KDTree
+from PIL import Image
 from motion_planning2 import apply_motion_planning  # Import the motion planning function
+import matplotlib.pyplot as plt
 
 class Drone:
     def __init__(self, drone_id, start_position, radius, altitude, speed, sensing_radius):
@@ -17,23 +22,23 @@ class Drone:
         self.sensing_radius = sensing_radius
         
         # Create the translucent red sphere to visualize the drone
-        self.sphere_id = self.create_red_sphere(start_position)
+        # self.sphere_id = self.create_red_sphere(start_position)
 
-    def create_red_sphere(self, position):
-        # Create a translucent red sphere at the initial drone position
-        sphere_radius = 0.5  # Radius of the sphere
-        rgba_color = [1, 0, 0, 0.5]  # Red color with 50% transparency
-        sphere_visual_shape = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=rgba_color)
+    # def create_red_sphere(self, position):
+    #     # Create a translucent red sphere at the initial drone position
+    #     sphere_radius = 0.5  # Radius of the sphere
+    #     rgba_color = [1, 0, 0, 0.5]  # Red color with 50% transparency
+    #     sphere_visual_shape = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=rgba_color)
         
-        # Create a kinematic multi-body with no mass (i.e., just a visual object)
-        sphere_id = p.createMultiBody(
-            baseMass=0,  # No mass, making the object kinematic
-            baseCollisionShapeIndex=-1,  # No collision for the sphere
-            baseVisualShapeIndex=sphere_visual_shape,  # Visual shape is the red sphere
-            basePosition=position  # Initial position of the sphere
-        )
+    #     # Create a kinematic multi-body with no mass (i.e., just a visual object)
+    #     sphere_id = p.createMultiBody(
+    #         baseMass=0,  # No mass, making the object kinematic
+    #         baseCollisionShapeIndex=-1,  # No collision for the sphere
+    #         baseVisualShapeIndex=sphere_visual_shape,  # Visual shape is the red sphere
+    #         basePosition=position  # Initial position of the sphere
+    #     )
         
-        return sphere_id
+    #     return sphere_id
 
 
     def update_position(self, current_time, drones, obstacles, target_position):
@@ -57,11 +62,11 @@ class Drone:
                 print("COLLISION")
         
         # Now, update the position of the sphere to match the drone's position
-        p.resetBasePositionAndOrientation(self.sphere_id, self.position, [0, 0, 0, 1])  # No rotation
-        pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
+        # p.resetBasePositionAndOrientation(self.sphere_id, self.position, [0, 0, 0, 1])  # No rotation
+        # pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
 
         print(f"Drone {self.drone_id} position: {self.position}")
-        print(f"Sphere {self.sphere_id} position: {pos}")
+        # print(f"Sphere {self.sphere_id} position: {pos}")
 
 
     def get_nearby_obstacles(self, obstacles, other_drone_positions):
@@ -113,7 +118,6 @@ class DroneSimulation:
         self.radius = 5
         self.altitude = 2
         self.speed = 100
-        self.orbit_speed = 100
 
         self.sensing_radius = 5;
 
@@ -124,10 +128,13 @@ class DroneSimulation:
                          [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas]
         
         # Initialize drones
-        self.drones = self.create_drones(num_drones)
+        self.drones, self.drone_ids = self.create_drones(num_drones)
 
         # Start the simulation timer
         self.start_time = time.time()
+
+        self.flooded_coordinates = []
+
 
     def load_ground(self):
         # Load the transparent plane URDF
@@ -155,13 +162,12 @@ class DroneSimulation:
             y_offset = random.uniform(-10, 10)
             drone_id = self.load_drone([x_offset, y_offset, 1])
             
-            # Initialize each drone with unique orbit parameters
             radius = random.uniform(3, 6)
             speed = random.uniform(50, 100)
             drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, self.sensing_radius)
             drones.append(drone)
             drone_ids.append(drone_id)
-        return drones
+        return drones, drone_ids
 
     def create_random_trees(self, num_trees):
         tree_ids = []
@@ -189,6 +195,91 @@ class DroneSimulation:
             flood_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=col_shape, baseVisualShapeIndex=visual_shape, basePosition=[x, y, thickness / 2])
             flood_ids.append(flood_id)
         return flood_ids
+    
+    def nearest_color(self, image_array):
+        # Calculate the average color of the NXN image
+        average_color = np.mean(image_array.reshape(-1, 3), axis=0)
+
+        # Define a set of target colors to match (RGB values)
+        target_colors = np.array([
+            [0, 255, 0],    # Green
+            [0, 0, 50],    # Blue
+        ])
+
+        # Use KDTree for nearest neighbor search
+        kdtree = KDTree(target_colors)
+        _, idx = kdtree.query(average_color)
+
+        nearest_color = target_colors[idx]
+
+        print("Average color of the image:", average_color)
+        print("Nearest color match:", nearest_color)
+        # Checks if nearest_color is blue
+        return nearest_color == [0, 0, 50]
+
+
+    def capture_aerial_view(self, drone_id):
+        # Set the folder for saving images
+        output_folder = "drone_images"
+        os.makedirs(output_folder, exist_ok=True)
+        
+        # Capture image from an aerial perspective
+        width, height = 128, 128
+        fov, aspect, near, far = 60, width / height, 0.1, 100
+        
+        # Get the drone's position and set the camera above it, looking down
+        drone_position = p.getBasePositionAndOrientation(drone_id)[0]
+        camera_position = [drone_position[0], drone_position[1], drone_position[2] + 10]  # 10 units above the drone
+        view_matrix = p.computeViewMatrix(camera_position, drone_position, [0, 1, 0])  # Camera looks directly down
+        
+        proj_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+        img = p.getCameraImage(width, height, view_matrix, proj_matrix)
+        
+        # Extract the RGB image data
+        img_rgb = np.array(img[2], dtype=np.uint8)
+        img_rgb = img_rgb.reshape((height, width, 4))  # Reshape to (H, W, 4)
+        
+        # Convert from RGBA to BGR for OpenCV
+        img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGBA2BGR)
+        is_flooded = self.nearest_color(img_bgr)
+        print(is_flooded.all())
+        if is_flooded.all():
+            self.flooded_coordinates.append(drone_position)
+            print(f"Flooded area detected at {drone_position}")
+        
+        # Save the image to a folder
+        timestamp = int(time.time())
+        filename = os.path.join(output_folder, f"aerial_view_{timestamp}.png")
+        cv2.imwrite(filename, img_bgr)
+        
+        print(f"Aerial view image saved to {filename}")
+
+    def plot_flooded_areas(self):
+        # Extract x and y coordinates for flooded areas
+        x_coords = [coord[0] for coord in self.flooded_coordinates]
+        y_coords = [coord[1] for coord in self.flooded_coordinates]
+
+        # Create a scatter plot of the flood areas on the plane
+        plt.figure(figsize=(10, 10))
+        plt.scatter(x_coords, y_coords, c='blue', label="Flooded Area")
+        plt.xlim(-10, 10)
+        plt.ylim(-10, 10)
+        
+        # Add visual markers for trees
+        tree_x = [p.getBasePositionAndOrientation(tree)[0][0] for tree in self.trees]
+        tree_y = [p.getBasePositionAndOrientation(tree)[0][1] for tree in self.trees]
+        plt.scatter(tree_x, tree_y, c='green', marker='^', label="Trees")
+
+        # Labels and plot details
+        plt.title("Detected Flooded Areas on Plane")
+        plt.xlabel("X Position")
+        plt.ylabel("Y Position")
+        plt.legend()
+        plt.grid(True)
+
+        # Save or display the plot
+        plt.savefig("flooded_areas_map.png")
+        plt.show()
 
     def run_simulation(self):
         while True:
@@ -196,15 +287,27 @@ class DroneSimulation:
             current_time = time.time() - self.start_time
 
             # Update position of each drone independently
-            for drone in self.drones:
+            for i in range(len(self.drones)):
+                drone = self.drones[i]
+                drone_id = self.drone_ids[i]
+                # Capture drone POV and save the image
+                self.capture_aerial_view(drone_id)
+
+                # set new target coordinate
                 t_x = random.uniform(-10,10)
                 t_y = random.uniform(-10,10)
                 t_z = random.uniform(0,10)
                 target_position = (t_x,t_y,t_z)
                 drone.update_position(current_time, self.drones, self.obstacles, target_position)
-
+            
             # Delay for simulation timing
             time.sleep(1./240.)
+
+            if current_time > 20:  # Run for 10 seconds
+                break
+
+        # Plot the flooded areas after the simulation ends
+        self.plot_flooded_areas()
 
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
