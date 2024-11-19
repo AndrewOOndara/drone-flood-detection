@@ -1,39 +1,16 @@
 from typing import TypeAlias, Optional
 from dataclasses import dataclass
 
-import networkx
-import osmnx
 import rtree
 
-from PIL import Image
-
 import matplotlib.pyplot as plt
-
-from io import BytesIO
-import pickle
-import os
 
 # (left, bottom, right, top)
 RectCoords: TypeAlias = tuple[float, float, float, float]
 
-def create_map_graph(cache_path: str, lat_lon: tuple[float, float], **osmnx_kwargs) -> networkx.MultiDiGraph:
-    if os.path.exists(cache_path):
-        with open(cache_path, 'rb') as f:
-            loaded = pickle.load(f)
-            if loaded['lat_lon'] == lat_lon and loaded['kwargs'] == osmnx_kwargs: return loaded['map']
-
-    loaded = dict(
-        lat_lon=lat_lon,
-        kwargs=osmnx_kwargs,
-        map=osmnx.graph_from_point(lat_lon, **osmnx_kwargs)
-    )
-    with open(cache_path, 'wb') as f:
-        return pickle.dump(loaded, f)
-    return loaded['map']
-
 @dataclass
 class ZoneDbEntry:
-    time: int
+    time: float
     drone_id: int
     flooded: bool
     confidence: float
@@ -42,14 +19,13 @@ PATH_CHECK_AREA_THRESHOLD: float = 1e-4
 PATH_ZERO_THRESHOLD: float = 1e-7
 
 class FloodDatabase:
-    def __init__(self, map_graph: networkx.MultiDiGraph):
+    def __init__(self):
         self.zones: rtree.Index = rtree.Index()
-        self.map_graph: networkx.MultiDiGraph = map_graph
         self.id_counter: int = 0
         self.entries_map: dict[int, ZoneDbEntry] = dict()
 
         # objects older than this time are considered irrelevant
-        self.outdated_threshold_time: int = 0
+        self.outdated_threshold_time: float = 0.0
 
     def _delete_one(self, item: rtree.index.Item):
         self.zones.delete(item.id, item.bbox)
@@ -101,7 +77,6 @@ class FloodDatabase:
                 return self.is_path_wet([path[0], midpoint]) or self.is_path_wet([midpoint, path[1]])
 
         intersections = list(self.zones.intersection(box, True))
-        intersections = self._clean_list(intersections)
         for item in intersections:
             dbe = self.entries_map[item.id]
             if dbe.flooded:
@@ -109,8 +84,11 @@ class FloodDatabase:
                     if _rect_intersects_line(item.bbox, p1, p2): return True
         return False
 
+    def get_zones(self, bbox: RectCoords) -> list[tuple[RectCoords, ZoneDbEntry]]:
+        return [(item.bbox, self.entries_map[item.id]) for item in self.zones.intersection(bbox, True)]
+    def get_bounds(self) -> RectCoords:
+        return self.zones.get_bounds()
     def _plot(self, ax: plt.Axes):
-        osmnx.plot_graph(self.map_graph, ax=ax, show=False)
         bounds = self.zones.get_bounds()
         if len(self.entries_map) > 0:
             for item in self.zones.intersection(bounds, True):
