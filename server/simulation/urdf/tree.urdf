@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <robot name="tree">
 
+<link name="world"/>
+
   <!-- Define the trunk of the tree -->
   <link name="trunk">
     <inertial>
@@ -22,6 +24,11 @@
       </geometry>
     </collision>
   </link>
+
+  <joint name="fixed_to_ground" type="fixed">
+    <parent link="world"/>
+    <child link="trunk"/>
+  </joint>
 
   <!-- Define the canopy of the tree -->
   <link name="canopy">
