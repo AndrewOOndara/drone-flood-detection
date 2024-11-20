@@ -24,6 +24,8 @@ class Drone:
         self.speed = speed
         self.center_position = [random.uniform(-10, 10), random.uniform(-10, 10), self.altitude]  # Random center
         self.sensing_radius = sensing_radius
+
+        # self.waypoints = waypoints
         
         # Create the translucent red sphere to visualize the drone
         # self.sphere_id = self.create_red_sphere(start_position)
@@ -45,7 +47,7 @@ class Drone:
     #     return sphere_id
 
     def getID(self):
-        return self.drone_id
+        return int(self.drone_id)
 
     def update_position(self, current_time, drones, obstacles, target_position):
        
@@ -112,7 +114,7 @@ class Drone:
 
 
 class DroneSimulation:
-    def __init__(self, num_drones=1):
+    def __init__(self, drone_dict):
         # Initialize PyBullet and load resources
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -133,8 +135,9 @@ class DroneSimulation:
         self.obstacles = [p.getBasePositionAndOrientation(tree)[0] for tree in self.trees] + \
                          [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas]
         
+        self.drone_dict = drone_dict
         # Initialize drones
-        self.drones = self.create_drones(num_drones)
+        self.drones = self.create_drones(drone_dict)
 
         # Start the simulation timer
         self.start_time = time.time()
@@ -151,22 +154,22 @@ class DroneSimulation:
         # Load the drone model at a specified position
         drone_urdf = "./urdf/quadroter.urdf"
         drone_id = p.loadURDF(drone_urdf, basePosition=position, useFixedBase=False)
-        
-        # Check if the drone was loaded correctly
-        if drone_id < 0:
-            raise ValueError("Failed to load the drone model. Check the URDF path and file integrity.")
-        
+
         # Short delay after loading the drone
         time.sleep(1)
         return drone_id
 
-    def create_drones(self, num_drones):
+    def create_drones(self, drone_dict):
         drone_ids = []
         drones = []
-        for i in range(num_drones):
-            x_offset = random.uniform(-10, 10)
-            y_offset = random.uniform(-10, 10)
+        
+        for drone_id, info in self.drone_dict.items():
+            # x_offset = random.uniform(-10, 10)
+            # y_offset = random.uniform(-10, 10)
+            x_offset = info["lats"][0]
+            y_offset = info["lons"][0]
             drone_id = self.load_drone([x_offset, y_offset, 1])
+            print(drone_id)
             
             radius = random.uniform(3, 6)
             speed = random.uniform(50, 100)
@@ -288,41 +291,56 @@ class DroneSimulation:
         plt.savefig("flooded_areas_map.png")
         plt.show()
 
-    def get_waypoints(self):
-        response = requests.get(API_URL_BASE + "waypoints")
-        response.raise_for_status()
-        return response.json()
-
     def run_simulation(self):
         while True:
             p.stepSimulation()
             current_time = time.time() - self.start_time
+            
+            i = 0
 
             # Update position of each drone independently
             for drone in self.drones:
                 # Capture drone POV and save the image
                 self.capture_aerial_view(drone)
-
-                # set new target coordinate
-                t_x = random.uniform(-10,10)
-                t_y = random.uniform(-10,10)
-                t_z = random.uniform(0,10)
+                waypoints = self.drone_dict[str(drone.getID())]
+                if i > len(waypoints["lats"]):
+                    continue
+                t_x = waypoints["lats"][i]
+                t_y = waypoints["lons"][i]
+                t_z = 5
                 target_position = (t_x,t_y,t_z)
                 drone.update_position(current_time, self.drones, self.obstacles, target_position)
-            
+                
+                i+=1
+             
             # Delay for simulation timing
             time.sleep(1./240.)
 
             if current_time > 20:  # Run for 10 seconds
                 break
-
+           
         # Plot the flooded areas after the simulation ends
         self.plot_flooded_areas()
 
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
-    API_URL_BASE: str = "http://168.5.37.177/api/v1/"   # wisha's address
-    simulation = DroneSimulation(num_drones=5)
-    waypoints = simulation.get_waypoints()
-    print(waypoints)
+    # drone_dict = {'71': {'lats': [29.717102, 29.7170808, 29.7168997, 29.7167764, 29.7164085, 29.7163768, 29.7163433, 29.7155523, 29.7151516, 29.7150883, 29.7151095, 29.7151355, 29.7153262, 29.715385, 29.7162585, 29.7162968, 29.7163315, 29.7164142, 29.7166818, 29.7167244, 29.7167507, 29.7167969, 29.7171419, 29.7172208, 29.7179413, 29.7179845, 29.7180097, 29.7181939, 29.7182927, 29.7183842, 29.7184468, 29.7185099, 29.7187135, 29.7186545, 29.7182801, 29.7180584, 29.7179155, 29.7177239, 29.7174624, 29.717102], 'lons': [-95.4002434, -95.400226, -95.400682, -95.401, -95.4019292, -95.402005, -95.4020917, -95.4040962, -95.4051232, -95.4057174, -95.4058145, -95.4059004, -95.4062185, -95.4061494, -95.4064177, -95.4064012, -95.4063863, -95.406339, -95.4060508, -95.4059569, -95.4058988, -95.4057836, -95.4049237, -95.4047262, -95.4029238, -95.4028156, -95.4027525, -95.402282, -95.4020296, -95.4017839, -95.4016278, -95.4016497, -95.4011212, -95.4010872, -95.4008716, -95.400744, -95.4006371, -95.4005726, -95.4004429, -95.4002434], 'path_length': 1549.3090000000004}, '72': {'lats': [29.717102, 29.7170808, 29.717175, 29.7177629, 29.717797, 29.7177451, 29.7165818, 29.7166015, 29.7166178, 29.716535, 29.7161219, 29.7185801, 29.7185345, 29.7205001, 29.7205597, 29.7203567, 29.7203702, 29.7193633, 29.7190397, 29.7190142, 29.7187883, 29.7187191, 29.7186985, 29.718395, 29.7178241, 29.717797, 29.7177629, 29.717175, 29.7170808, 29.717102], 'lons': [-95.4002434, -95.400226, -95.3999849, -95.3984879, -95.398401, -95.3983733, -95.397752, -95.3977014, -95.3976593, -95.3976174, -95.3974005, -95.3954981, -95.3954275, -95.3938754, -95.3939423, -95.3940902, -95.3941106, -95.3966485, -95.3964867, -95.3965469, -95.3971018, -95.3972772, -95.3973272, -95.397245, -95.3983275, -95.398401, -95.3984879, -95.3999849, -95.400226, -95.4002434], 'path_length': 1821.355}, '73': {'lats': [29.717102, 29.7174624, 29.7177239, 29.7179155, 29.7180584, 29.7182801, 29.7186545, 29.7187135, 29.7190112, 29.7194467, 29.719812, 29.7195767, 29.7192498, 29.7191331, 29.7190218, 29.7186985, 29.718395, 29.7183652, 29.7180452, 29.7180019, 29.7179235, 29.7172863, 29.716535, 29.7161219, 29.7160191, 29.7159441, 29.7143904, 29.714492, 29.7145221, 29.7145642, 29.715184, 29.7158986, 29.7161439, 29.7163249, 29.7170247, 29.7170808, 29.717102], 'lons': [-95.4002434, -95.4004429, -95.4005726, -95.4006371, -95.400744, -95.4008716, -95.4010872, -95.4011212, -95.4003794, -95.3992631, -95.397981, -95.3977866, -95.3976259, -95.3975646, -95.3975106, -95.3973272, -95.397245, -95.3972054, -95.3969652, -95.3968448, -95.3968015, -95.3972172, -95.3976174, -95.3974005, -95.3974801, -95.3975411, -95.3988051, -95.3989217, -95.3988966, -95.398963, -95.399319, -95.3995833, -95.3997126, -95.3998108, -95.400183, -95.400226, -95.4002434], 'path_length': 1620.034}}
+    drone_dict = dict()
+    for i in range(1,4):
+        lats = []
+        lons = []
+        for j in range(10):
+            lats.append(random.uniform(-10, 10))
+            lons.append(random.uniform(-10, 10))
+        drone_dict[str(70+i)] = {"lats": lats, "lons":lons}
+
+    # API_URL_BASE: str = "http://168.5.37.177/api/v1/"   # wisha's address
+    # response = requests.get(API_URL_BASE + "waypoints")
+    # response.raise_for_status()
+    # drone_dict = response.json()
+
+    print(drone_dict)
+
+    simulation = DroneSimulation(drone_dict)
+
     simulation.run_simulation()
