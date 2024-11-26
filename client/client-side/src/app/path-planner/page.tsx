@@ -92,7 +92,7 @@ function App() {
           </div>
         </div>
       ) : (
-        <div className="p-4 mb-4 bg-gray-100 rounded">
+        <div className="p-4 mb-4 rounded">
           Click on a node to select it
         </div>
       )}

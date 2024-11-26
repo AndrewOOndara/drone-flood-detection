@@ -17,7 +17,7 @@ const Navbar = () => {
   const router = useRouter();
 
   return (
-    <Box bg="white" px={4} py={2} color="black">
+    <Box bg="white" px={4} py={2} pt={30} color="black">
       <Flex h={16} alignItems="center" justifyContent="space-between">
         {/* Logo on the left */}
         <Box fontWeight="bold" fontSize="lg" cursor="pointer" onClick={() => router.push("/")}>
@@ -31,9 +31,6 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <Button colorScheme="whiteAlpha" variant="outline" size="sm" onClick={() => router.push("/signup")}>
-            Sign Up
-          </Button>
         </HStack>
 
       </Flex>
