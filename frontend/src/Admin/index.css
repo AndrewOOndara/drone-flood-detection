@@ -1,0 +1,28 @@
+.map-container {
+    width: 100%;
+    height: 60vh;
+    overflow: hidden;
+    border-radius: var(--round-radius);
+}
+
+.admin-sections-container {
+    width: 100%;
+}
+
+.admin-section {
+    margin-inline: 16px;
+    padding-inline: 16px;
+    margin-block-end: 32px;
+    overflow: hidden;
+    border-radius: var(--round-radius);
+    box-shadow: 0 0 16px 0 rgba(0,0,0,0.75);
+}
+
+.admin-drones-list {
+    display: flex;
+    overflow-x: scroll;
+}
+.admin-drone-box {
+    width: 16em;
+    height: 16em;
+}

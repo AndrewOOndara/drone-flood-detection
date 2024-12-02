@@ -1,21 +1,26 @@
 import React, { useState } from 'react';
 import MapComponent from './MapComponent';
+import { AppSettings, LatLon, NodeId } from '../types';
 
 type Mode = 'node' | 'edge';
 
-interface NodeInfo {
+type NodeInfo = {
   nodeId: string;
   position: [number, number];
 }
 
-interface EdgeInfo {
+type EdgeInfo = {
   fromNodeId: string;
   toNodeId: string;
   fromPosition: [number, number];
   toPosition: [number, number];
 }
 
-function EditCoverageMap() {
+type Props = Pick<AppSettings, "map_lat_lon" | "map_radius" | "edges_to_visit"> & {
+  updateSettings: (arg: Partial<AppSettings>) => void
+}
+
+function EditCoverageMap(props: Props) {
   const [mode, setMode] = useState<Mode>('edge');
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<EdgeInfo | null>(null);
@@ -56,13 +61,13 @@ function EditCoverageMap() {
   };
 
   return (
-    <div className="p-4">
+    <section className="coverage-editor">
       {/* Mode Toggle */}
-      <div className="mb-4">
-        <label className="inline-flex items-center relative cursor-pointer">
+      <div className="">
+        <label className="">
           <input
             type="checkbox"
-            className="sr-only peer"
+            className=""
             checked={mode === 'edge'}
             onChange={() => {
               setMode(mode === 'node' ? 'edge' : 'node');
@@ -70,14 +75,13 @@ function EditCoverageMap() {
               setSelectedEdge(null);
             }}
           />
-          <div className="w-36 h-10 bg-gray-200 rounded-full peer peer-checked:after:translate-x-[6.5rem] after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-9 after:w-16 after:transition-all peer-checked:bg-blue-500"></div>
-          <span className="absolute right-4 text-sm font-medium text-gray-800 peer-checked:text-white">Edge Select Mode</span>
+          Edge Select Mode
         </label>
       </div>
 
 
       {/* Selection Info Display */}
-      {mode === 'node' && selectedNode ? (
+      {/* {mode === 'node' && selectedNode ? (
         <div className="p-4 mb-4 bg-blue-100 rounded">
           <h3 className="font-bold mb-2">Selected Node</h3>
           <p>Node ID: {selectedNode.nodeId}</p>
@@ -135,11 +139,11 @@ function EditCoverageMap() {
         <div className="p-4 mb-4 bg-gray-100 rounded">
           Click on a {mode === 'node' ? 'node' : 'road'} to select it
         </div>
-      )}
+      )} */}
       
       <MapComponent 
-        center={[51.505, -0.09]}
-        zoom={13}
+        center={props.map_lat_lon}
+        radius={props.map_radius}
         mode={mode}
         permanentNodes={permanentNodes}
         onNodeSelect={setSelectedNode}
@@ -148,15 +152,15 @@ function EditCoverageMap() {
       />
 
       {/* Permanent Nodes List */}
-      <div className="mt-4 p-4 bg-gray-100 rounded">
-        <h3 className="font-bold mb-2">Selected Path Nodes ({permanentNodes.length})</h3>
-        <div className="space-y-2">
+      <div className="">
+        <h3 className="">Selected Path Nodes ({permanentNodes.length})</h3>
+        <div className="">
           {permanentNodes.map((node) => (
-            <div key={node.nodeId} className="flex justify-between items-center">
+            <div key={node.nodeId} className="">
               <span>Node {node.nodeId}</span>
               <button
                 onClick={() => handlePermanentNodeClick(node.nodeId)}
-                className="px-2 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                className=""
               >
                 Remove
               </button>
@@ -164,7 +168,7 @@ function EditCoverageMap() {
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 

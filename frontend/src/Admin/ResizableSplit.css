@@ -1,0 +1,20 @@
+.resizable-split {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    /* Adjust height as needed */
+}
+
+.left-section,
+.right-section {
+    height: 100%;
+    overflow-y: auto;
+    /* Add scrollbar if content overflows */
+}
+
+.resize-bar {
+    width: 10px;
+    /* Resize bar width */
+    background-color: #ccc;
+    cursor: col-resize;
+}

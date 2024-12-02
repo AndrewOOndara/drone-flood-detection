@@ -11,3 +11,30 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+body {
+  width: 100%;
+  --round-radius: 16px;
+  --color-background: white;
+}
+
+.root {
+  width: 100%;
+}
+
+.app-title-row {
+  display: flex;
+  align-items: center;
+  margin-inline: 16px;
+}
+.app-title {
+  flex: 1;
+}
+.admin-user-switch {
+  visibility: hidden;
+}
+.admin-user-switch-label {
+  font-size: 2em;
+  cursor: pointer;
+}
+

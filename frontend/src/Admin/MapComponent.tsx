@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -37,7 +37,7 @@ interface EdgeInfo {
 
 interface MapProps {
   center: [number, number];
-  zoom: number;
+  radius: number;
   mode: Mode;
   permanentNodes: NodeInfo[];
   onNodeSelect: (nodeData: NodeInfo | null) => void;
@@ -45,7 +45,7 @@ interface MapProps {
   onPermanentNodeClick: (nodeId: string) => void;
 }
 
-const SelectionHandler: React.FC<{ 
+const SelectionHandler: React.FC<{
   mode: Mode;
   permanentNodes: NodeInfo[];
   onNodeSelect: (data: NodeInfo | null) => void;
@@ -55,7 +55,7 @@ const SelectionHandler: React.FC<{
   const map = useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng;
-      
+
       // Check if clicking on a permanent node first
       const clickRadius = 20; // pixels
       const clickPoint = map.latLngToContainerPoint(e.latlng);
@@ -69,7 +69,7 @@ const SelectionHandler: React.FC<{
         onPermanentNodeClick(clickedPermanentNode.nodeId);
         return;
       }
-      
+
       try {
         if (mode === 'node') {
           const query = `
@@ -77,14 +77,14 @@ const SelectionHandler: React.FC<{
             node(around:20,${lat},${lng});
             out body;
           `;
-          
+
           const response = await fetch('https://overpass-api.de/api/interpreter', {
             method: 'POST',
             body: query,
           });
-          
+
           const data = await response.json();
-          
+
           if (data.elements.length > 0) {
             const nearestNode = data.elements[0];
             onNodeSelect({
@@ -101,25 +101,25 @@ const SelectionHandler: React.FC<{
             (._;>;);
             out body;
           `;
-          
+
           const response = await fetch('https://overpass-api.de/api/interpreter', {
             method: 'POST',
             body: query,
           });
-          
+
           const data = await response.json();
-          
+
           if (data.elements.length > 0) {
             const ways = data.elements.filter((el: any) => el.type === 'way');
             if (ways.length > 0) {
               const nearestWay = ways[0];
               const fromNodeId = nearestWay.nodes[0].toString();
               const toNodeId = nearestWay.nodes[nearestWay.nodes.length - 1].toString();
-              
+
               const nodes = data.elements.filter((el: any) => el.type === 'node');
               const fromNode = nodes.find((n: any) => n.id.toString() === fromNodeId);
               const toNode = nodes.find((n: any) => n.id.toString() === toNodeId);
-              
+
               if (fromNode && toNode) {
                 onEdgeSelect({
                   fromNodeId,
@@ -139,19 +139,19 @@ const SelectionHandler: React.FC<{
       }
     },
   });
-  
+
   return null;
 };
 
-const MapComponent: React.FC<MapProps> = ({ 
-  center, 
-  zoom, 
+const MapComponent = React.memo(function ({
+  center,
+  radius,
   mode,
   permanentNodes,
   onNodeSelect,
   onEdgeSelect,
   onPermanentNodeClick
-}) => {
+}: MapProps) {
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<EdgeInfo | null>(null);
 
@@ -168,28 +168,29 @@ const MapComponent: React.FC<MapProps> = ({
   };
 
   return (
-    <div style={{ height: '400px', width: '100%' }}>
-      <MapContainer 
-        center={center} 
-        zoom={zoom} 
+    <div className="map-container">
+      <MapContainer
+        center={[0.0, 0.0]}
+        zoom={13}
         style={{ height: '100%', width: '100%' }}
       >
+        <MapUpdater center={center} radius={radius}/>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <SelectionHandler 
-          mode={mode} 
+        <SelectionHandler
+          mode={mode}
           permanentNodes={permanentNodes}
-          onNodeSelect={handleNodeSelect} 
+          onNodeSelect={handleNodeSelect}
           onEdgeSelect={handleEdgeSelect}
           onPermanentNodeClick={onPermanentNodeClick}
         />
-        
+
         {/* Permanent Nodes */}
         {permanentNodes.map((node) => (
-          <Marker 
-            key={node.nodeId} 
+          <Marker
+            key={node.nodeId}
             position={node.position}
             icon={blackIcon}
           >
@@ -200,14 +201,14 @@ const MapComponent: React.FC<MapProps> = ({
             </Popup>
           </Marker>
         ))}
-        
+
         {/* Temporary Selection Display */}
         {selectedNode && mode === 'node' && (
           <Marker position={selectedNode.position}>
             <Popup>Node ID: {selectedNode.nodeId}</Popup>
           </Marker>
         )}
-        
+
         {selectedEdge && mode === 'edge' && (
           <>
             <Marker position={selectedEdge.fromPosition}>
@@ -227,6 +228,19 @@ const MapComponent: React.FC<MapProps> = ({
       </MapContainer>
     </div>
   );
-};
+});
+const EARTH_RADIUS_M = 6E6;
+const MapUpdater = React.memo(function ({center: [lat, lon], radius} : {center: [number, number], radius: number}) {
+  const map = useMap();
+  const lonAngle = radius * 180 / (EARTH_RADIUS_M * Math.PI);
+  const latAngle = Math.cos(lon * Math.PI / 180) * radius * 180 / (EARTH_RADIUS_M * Math.PI);
+  React.useEffect(() => {
+    map.flyToBounds(L.latLngBounds(
+      L.latLng(lat - latAngle, lon - lonAngle),
+      L.latLng(lat + latAngle, lon + lonAngle),
+    ), {animate: false})
+  }, [lat, lon, map]);
+  return null;
+})
 
 export default MapComponent;
