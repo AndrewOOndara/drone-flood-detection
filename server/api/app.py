@@ -1,10 +1,13 @@
 from flask import Flask, request, Response, jsonify
+from flask_cors import CORS
+
 import app_state
 import floodzones
 import time
 from encoder import EnhancedJSONEncoder
 
 app = Flask(__name__)
+CORS(app)
 
 app.config['MAX_CONTENT_LENGTH'] = 2**26
 app.json_encoder = EnhancedJSONEncoder
