@@ -15,11 +15,19 @@ import drone
 class AppSettings:
     map_lat_lon: tuple[float, float]
     map_radius: float
-    edges_to_visit: list[tuple[int, int]]
+    edges_to_visit: list[tuple[int, int, bool]]
     drones: list[drone.Drone]
 
 def default_app_settings() -> AppSettings:
     return AppSettings(map_lat_lon=(29.717997,-95.400547), map_radius=1500, edges_to_visit=[], drones=[])
+
+def dict_to_app_settings(d: dict) -> AppSettings:
+    return AppSettings(
+        map_lat_lon = tuple(d['map_lat_lon']),
+        map_radius = d['map_radius'],
+        edges_to_visit = [tuple(ev) for ev in d['edges_to_visit']],
+        drones = [drone.Drone(drone_id=dv['drone_id'], base_station_lat_lon=tuple(dv['base_station_lat_lon']), battery_life_m=dv['battery_life_m']) for dv in d['drones']]
+    )
 
 def _create_map_graph(lat_lon: tuple[float, float], dist_m: float, **osmnx_kwargs) -> networkx.MultiDiGraph:
     return osmnx.graph_from_point(lat_lon, dist=dist_m)
@@ -29,7 +37,7 @@ class AppState:
         self.settings: app_settings.AppSettings = default_app_settings()
         self.flood_db: floodzones.FloodDatabase = floodzones.FloodDatabase()
         # self.evaluator: evaluate.FloodEvaluator = evaluate.FloodEvaluator()
-        self.map_graph: networkx.MultiDiGraph = _create_map_graph(self.settings.map_lat_lon, self.settings.map_radius)
+        self.map_graph: Optional[networkx.MultiDiGraph] = None
         self.planned_path: Optional[dict[int, list[int]]] = None
 
         # HARDCODE SOME PARAMETERS BECAUSE WE DON'T HAVE FRONTEND ADMIN PANEL YET
@@ -53,7 +61,9 @@ class AppState:
             scale_factor=1000,
         )
 
+__global_app_state = AppState()
+
 def get_state() -> AppState:
     if 'app_state' not in g:
-        g.app_state = AppState()
+        g.app_state = __global_app_state
     return g.app_state

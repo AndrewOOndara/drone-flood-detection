@@ -36,7 +36,7 @@ def _cull_and_symmetrize(G: networkx.MultiDiGraph, key_nodes: list[int], leeway:
 
 def plan_drones_path(
     G: networkx.MultiGraph,
-    edges: list[tuple[int, int]],
+    edges: list[tuple[int, int, bool]],
     drones: list[drone.Drone],
     scale_factor: float = 1000,
 ) -> dict[int, list[int]]:

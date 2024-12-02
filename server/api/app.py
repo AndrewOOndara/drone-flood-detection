@@ -2,14 +2,12 @@ from flask import Flask, request, Response, jsonify
 import app_state
 import floodzones
 import time
+from encoder import EnhancedJSONEncoder
 
 app = Flask(__name__)
 
 app.config['MAX_CONTENT_LENGTH'] = 2**26
-
-@app.route('/hello/<name>')
-def hello_name(name):
-    return 'Hello %s!' % name
+app.json_encoder = EnhancedJSONEncoder
 
 @app.route('/api/v1/zones', methods=['GET'])
 def zones_endpoint():
@@ -41,6 +39,18 @@ def waypoints_endpoint():
     state = app_state.get_state()
     state.plan_round()
     return jsonify(state.planned_path)
+
+@app.route('/api/v1/settings', methods=['GET'])
+def settings_get_endpoint():
+    state = app_state.get_state()
+    return jsonify(state.settings)
+
+@app.route('/api/v1/settings', methods=['PUT'])
+def settings_put_endpoint():
+    state = app_state.get_state()
+    content = request.get_json()
+    state.settings = app_state.dict_to_app_settings(content)
+    return "OK"
 
 if __name__ == '__main__':
    app.run()

@@ -1,0 +1,7 @@
+version = 1
+url = "http://localhost:5000/api/v1/settings"
+method = "GET"
+
+[headers]
+
+[variables]
