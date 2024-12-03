@@ -28,8 +28,8 @@ interface NodeInfo {
 }
 
 interface PathSegment {
-  fromNode: NodeInfo;
-  toNode: NodeInfo;
+  from: [number, number];
+  to: [number, number];
 }
 
 interface Rectangle {
@@ -373,8 +373,8 @@ const UserMap: React.FC<MapProps> = ({
             <Polyline
               key={index}
               positions={[
-                segment.fromNode.position,
-                segment.toNode.position
+                segment.from,
+                segment.to
               ]}
               pathOptions={{
                 color: '#22c55e',
@@ -385,7 +385,7 @@ const UserMap: React.FC<MapProps> = ({
               }}
             >
               <Popup>
-                Edge {index + 1}: {segment.fromNode.nodeId} → {segment.toNode.nodeId}
+                Edge {index + 1}
               </Popup>
             </Polyline>
           ))}

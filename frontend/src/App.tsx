@@ -7,25 +7,24 @@ interface NodeInfo {
 }
 
 interface PathSegment {
-  fromNode: NodeInfo;
-  toNode: NodeInfo;
+  from: [number, number];
+  to: [number, number];
 }
 
-const planPath = async (nodes: NodeInfo[]): Promise<PathSegment[]> => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // For demonstration, create a path that connects nodes in sequence
-  // Replace this with your actual API call
-  const segments: PathSegment[] = [];
-  for (let i = 0; i < nodes.length - 1; i++) {
-    segments.push({
-      fromNode: nodes[i],
-      toNode: nodes[i + 1]
-    });
-  }
-  return segments;
-};
+const planPath = async (coordinates: [number, number][]): Promise<PathSegment[]> => {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // For demonstration, create a path that connects coordinates in sequence
+    const segments: PathSegment[] = [];
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      segments.push({
+        from: coordinates[i],
+        to: coordinates[i + 1]
+      });
+    }
+    return segments;
+  };
 
 function App() {
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
@@ -54,7 +53,7 @@ function App() {
 
     setIsPlanning(true);
     try {
-      const path = await planPath(permanentNodes);
+      const path = await planPath(permanentNodes.map(node => node.position));
       setPlannedPath(path);
     } catch (error) {
       console.error('Error planning path:', error);
