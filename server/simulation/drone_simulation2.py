@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 import requests
 import json
+import sys
 
 
 class Drone:
@@ -30,8 +31,8 @@ class Drone:
 
     def create_red_sphere(self, position):
         # Create a translucent red sphere at the initial drone position
-        sphere_radius = 0.5  # Radius of the sphere
-        rgba_color = [1, 0, 0, 0.5]  # Red color with 50% transparency
+        sphere_radius = self.sensing_radius  # Radius of the sphere
+        rgba_color = [1, 0, 0, 0.2]  # Red color with 50% transparency
         sphere_visual_shape = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=rgba_color)
         
         # Create a kinematic multi-body with no mass (i.e., just a visual object)
@@ -46,26 +47,30 @@ class Drone:
 
     def getID(self):
         return int(self.drone_id)
+    
+    def getPos(self):
+        return self.position
 
-    def update_position(self, current_time, drones, obstacles, target_position):
+    def update_position(self, current_time, drones, obstacles, target_position, avoid_collisions):
        
         # Gather positions of other drones to avoid collisions
-        other_drone_positions = [d.position for d in drones if d.drone_id != self.drone_id]
+        other_drone_positions = [d.getPos() for d in drones if d.getID() != self.drone_id]
         nearby_obstacles = self.get_nearby_obstacles(obstacles, other_drone_positions)
 
         # Use motion planning to move towards the target while avoiding obstacles, including other drones
-        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, speed=50, avoid_collisions=True)
+        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, speed=50, avoid_collisions=avoid_collisions)
 
         # Update the drone's position
         self.position = p.getBasePositionAndOrientation(self.drone_id)[0]
 
         for o in nearby_obstacles:
             if o == target_position:
-                print("COLLISION")
+                print("********* COLLISION *********")
+
         
         # Now, update the position of the sphere to match the drone's position
         p.resetBasePositionAndOrientation(self.sphere_id, self.position, [0, 0, 0, 1])  # No rotation
-        pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
+        # pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
 
         print(f"Drone {self.drone_id} position: {self.position}")
         # print(f"Sphere {self.sphere_id} position: {pos}")
@@ -80,12 +85,16 @@ class Drone:
             distance = np.linalg.norm(np.array(self.position) - np.array(obstacle))
             if distance < self.sensing_radius:  # Fixed sensing radius for avoidance, you can adjust this value
                 nearby_obstacles.append(obstacle)
+                print("obstacle detected!")
         
         # Check for nearby drones (drone positions)
         for drone_pos in other_drone_positions:
+            print("drone pos: " + str(drone_pos))
             distance = np.linalg.norm(np.array(self.position) - np.array(drone_pos))
+            print("distance = " + str(distance))
             if distance < self.sensing_radius:  # Fixed sensing radius for avoiding other drones
                 nearby_obstacles.append(drone_pos)
+                print("neighbor drone detected!")
 
         return nearby_obstacles
 
@@ -94,7 +103,7 @@ class Drone:
 
 
 class DroneSimulation:
-    def __init__(self, waypoints_list):
+    def __init__(self, waypoints_list, avoid_collisions):
         # Initialize PyBullet and load resources
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -107,7 +116,9 @@ class DroneSimulation:
         self.altitude = 2
         self.speed = 100
 
-        self.sensing_radius = 10;
+        self.avoid_collisions = avoid_collisions
+
+        self.sensing_radius = 2;
 
         # Initialize obstacles
         self.trees = self.create_random_trees(20)
@@ -118,7 +129,7 @@ class DroneSimulation:
         self.waypoints_list = waypoints_list
 
         # Initialize drones
-        self.drones, self.drone_ids = self.create_drones(waypoints_list)
+        self.drones, self.drone_ids = self.create_drones()
 
         self.drone_dict = self.make_drone_dict()
 
@@ -133,6 +144,7 @@ class DroneSimulation:
         for info in self.waypoints_list:
             drone_dict[str(self.drone_ids[i])] = info
             i+=1
+        return drone_dict
 
     def load_ground(self):
         # Load the transparent plane URDF
@@ -148,7 +160,7 @@ class DroneSimulation:
         time.sleep(1)
         return drone_id
 
-    def create_drones(self, drone_dict):
+    def create_drones(self):
         drone_ids = []
         drones = []
 
@@ -291,14 +303,15 @@ class DroneSimulation:
             for drone in self.drones:
                 # Capture drone POV and save the image
                 self.capture_aerial_view(drone)
-                waypoints = self.drone_dict[str(drone.getID())]
+                id = str(drone.getID())
+                waypoints = self.drone_dict[id]
                 if i >= len(waypoints["lats"]):
                     continue
                 t_x = waypoints["lats"][i]
                 t_y = waypoints["lons"][i]
-                t_z = 2
+                t_z = 0.8
                 target_position = (t_x,t_y,t_z)
-                drone.update_position(current_time, self.drones, self.obstacles, target_position)
+                drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
                 if (drone.getID()) == 71:
                     path.append(drone.position)
                 
@@ -314,16 +327,19 @@ class DroneSimulation:
         # print(path)
         
 
-def demo(avoid_collision=True):
+def collision_demo(avoid_collision=True):
     waypoints_list = [{"lats": [i for i in range(-5,5)], "lons": [i for i in range(-5,5)]},
      {"lats": [i for i in range(-5,5)], "lons": [i for i in range(5,-5,-1)]},
      {"lats": [i for i in range(5,-5,-1)], "lons": [i for i in range(5,-5,-1)]}]
-    simulation = DroneSimulation(waypoints_list)
+    simulation = DroneSimulation(waypoints_list, avoid_collision)
     simulation.run_simulation()
 
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
-    demo()
+    collision_demo(True)
+
+
+
     # for i in range(1,num_drones-1):
     #     lats = []
     #     lons = []

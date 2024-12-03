@@ -19,9 +19,15 @@ def calculate_avoidance_vector(drone_pos, obstacles, avoidance_radius=5):
         if distance < avoidance_radius:
             # Calculate vector away from the obstacle
             away_vector = np.array(drone_pos) - np.array(obs_pos)
+            # print("away vector = " + str(away_vector))
+            # print("distance = " + str(distance))
+            
+            # print("computation 1: " + str(away_vector/distance))
+            # print("computation 2: " + str(avoidance_radius-distance))
             scaled_away_vector = (away_vector / distance) * (avoidance_radius - distance)
-            avoidance_vector += scaled_away_vector
-            print("avoiding obstacle with avoidance vector " + str(avoidance_vector))
+            avoidance_vector = np.add(avoidance_vector, scaled_away_vector)
+            # print("avoiding obstacle with avoidance vector " + str(avoidance_vector))
+            # print("old vector = " + str(scaled_away_vector) + ", new vector = " + str(avoidance_vector))
     
     return avoidance_vector
 
@@ -46,6 +52,7 @@ def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_colli
         avoidance_vector = calculate_avoidance_vector(drone_pos, obstacles)
     else:
         avoidance_vector = np.zeros(3)
+        print("not avoiding anything")
 
     # Combine movement and avoidance vectors
     combined_vector = movement_vector + avoidance_vector
