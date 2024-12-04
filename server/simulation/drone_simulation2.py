@@ -6,6 +6,7 @@ import random
 import math
 import cv2  
 import os 
+import osmnx
 from scipy.spatial import KDTree
 from PIL import Image
 from motion_planning2 import apply_motion_planning  # Import the motion planning function
@@ -109,7 +110,7 @@ class DroneSimulation:
         # Initialize PyBullet and load resources
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+        #p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         
         # Load environment elements
         self.ground_uid = self.load_ground()
@@ -123,7 +124,7 @@ class DroneSimulation:
         self.avoid_collisions = avoid_collisions
 
         # Initialize obstacles
-        self.trees = self.create_random_trees(20)
+        self.trees = self.create_random_trees(2)
         # self.trees = []
         self.flooded_areas = self.create_random_flooded_areas(50)
         self.obstacles = [p.getBasePositionAndOrientation(tree)[0] for tree in self.trees] + \
@@ -153,10 +154,36 @@ class DroneSimulation:
 
     def load_ground(self):
         # Load the transparent plane URDF
-        ground_uid = p.loadURDF("plane_transparent.urdf", [0, 0, 0])
-        p.setCollisionFilterGroupMask(ground_uid, -1, collisionFilterGroup=0, collisionFilterMask=1|2)
-        p.changeVisualShape(ground_uid, -1, rgbaColor=[0, 1, 0, 1])  # Solid green color
-        return ground_uid
+        ground_uid = p.loadURDF("plane_transparent.urdf", [0,0,0.005])
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+        p.changeVisualShape(ground_uid, -1, rgbaColor=[0,1,0,1])
+        # Load OBJ as visual and collision shapes
+        obj_path = "/Users/andrewondara/drone-flood-detection/server/simulation/obj/riceu_env.obj"
+        visual_shape_id = p.createVisualShape(
+            shapeType=p.GEOM_MESH,
+            fileName=obj_path,
+            meshScale=[0.01, 0.01, 0.01]
+        )
+
+        collision_shape_id = p.createCollisionShape(
+            shapeType=p.GEOM_MESH,
+            fileName=obj_path,
+            meshScale=[0.01, 0.01, 0.01]
+        )
+        
+        # Rotate the object by 90 degrees around the X-axis
+        orientation = p.getQuaternionFromEuler([1.5708, 0, 0])
+        
+        # Create the building
+        building = p.createMultiBody(
+            baseMass=0,
+            baseCollisionShapeIndex=collision_shape_id,
+            baseVisualShapeIndex=visual_shape_id,
+            basePosition=[1, 0, 0],
+            baseOrientation=orientation
+        )
+        
+        return building
 
     def load_drone(self, position):
         # Load the drone model at a specified position
@@ -190,8 +217,8 @@ class DroneSimulation:
     def create_random_trees(self, num_trees):
         tree_ids = []
         for _ in range(num_trees):
-            x = random.uniform(-10, 10)
-            y = random.uniform(-10, 10)
+            x = 5
+            y = 5
             z = 0.5
             tree_urdf = "./urdf/tree.urdf"
             tree_id = p.loadURDF(tree_urdf, basePosition=[x, y, z])
