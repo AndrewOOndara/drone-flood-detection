@@ -192,7 +192,7 @@ class DroneSimulation:
         p.setCollisionFilterGroupMask(drone_id, -1, collisionFilterGroup=1, collisionFilterMask=0)
 
         # Short delay after loading the drone
-        time.sleep(1)
+        # time.sleep(1)
         return drone_id
 
     def create_drones(self):
@@ -441,17 +441,58 @@ class DroneSimulation:
         self.plot_drone_paths(real_paths)
         # print(real_paths)
         
+def latlon_2_sim(lat,lon):
+        
+    latO = 29.7172
+    lonO = -95.4043
+    rot = -1.50002
+    scale = 1027.52
 
-def collision_demo(avoid_collision=True):
+    rot_matrix = np.array([[np.cos(rot),np.sin(rot)],
+               [-np.sin(rot),np.cos(rot)]])
+    
+    vec = np.array([lat-latO, lon-lonO])
+
+    return np.dot(rot_matrix, vec*scale)
+
+
+def rice_demo(avoid_collision=True):
     waypoints_list = [{"lats": [i for i in range(-5,5)], "lons": [i for i in range(-5,5)]},
      {"lats": [i for i in range(-5,5)], "lons": [i for i in range(5,-5,-1)]},
      {"lats": [i for i in range(5,-5,-1)], "lons": [i for i in range(5,-5,-1)]}]
     simulation = DroneSimulation(waypoints_list, avoid_collision)
     simulation.run_simulation()
 
+def real_demo():
+    print("doing real demo")
+    API_URL_BASE: str = "http://168.5.58.43:5000/api/v1/"   # wisha's address
+    response = requests.get(API_URL_BASE + "waypoints")
+    print(response)
+    response.raise_for_status()
+    pre_waypoints_list = list(response.json().values())
+    print(pre_waypoints_list)
+    waypoints_list = []
+
+    for latlondict in pre_waypoints_list:
+        new_latlon_dict = {"lats":[], "lons":[]}
+        for i in range(len(latlondict["lats"])):
+            lat = latlondict["lats"][i]
+            lon = latlondict["lons"][i]
+            cart = list(latlon_2_sim(lat,lon))
+            new_latlon_dict["lats"].append(cart[0])
+            new_latlon_dict["lons"].append(cart[1])
+        waypoints_list.append(new_latlon_dict)
+
+    print("after transform: " + str(waypoints_list))
+
+    simulation = DroneSimulation(waypoints_list, True)
+    simulation.run_simulation()
+
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
-    collision_demo(True)
+    # rice_demo(True)
+
+    real_demo()
 
 
 
@@ -467,10 +508,7 @@ if __name__ == "__main__":
 
 
 
-    # API_URL_BASE: str = "http://168.5.37.177/api/v1/"   # wisha's address
-    # response = requests.get(API_URL_BASE + "waypoints")
-    # response.raise_for_status()
-    # drone_dict = response.json()
+    
 
     # print(drone_dict)
 
