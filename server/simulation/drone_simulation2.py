@@ -75,7 +75,7 @@ class Drone:
         #         print("********* COLLISION *********")
 
 
-        print(f"Drone {self.drone_id} position: {self.position}")
+        #print(f"Drone {self.drone_id} position: {self.position}")
         # print(f"Sphere {self.sphere_id} position: {pos}")
 
 
@@ -88,16 +88,16 @@ class Drone:
             distance = np.linalg.norm(np.array(self.position) - np.array(obstacle))
             if distance < self.sensing_radius:  # Fixed sensing radius for avoidance, you can adjust this value
                 nearby_obstacles.append(obstacle)
-                print("obstacle detected!")
+                #print("obstacle detected!")
         
         # Check for nearby drones (drone positions)
         for drone_pos in other_drone_positions:
-            print("drone pos: " + str(drone_pos))
+            #print("drone pos: " + str(drone_pos))
             distance = np.linalg.norm(np.array(self.position) - np.array(drone_pos))
-            print("distance = " + str(distance))
+            #print("distance = " + str(distance))
             if distance < self.sensing_radius:  # Fixed sensing radius for avoiding other drones
                 nearby_obstacles.append(drone_pos)
-                print("neighbor drone detected!")
+                #print("neighbor drone detected!")
 
         return nearby_obstacles
 
@@ -119,14 +119,14 @@ class DroneSimulation:
         self.radius = 5
         self.altitude = 2
         self.speed = 50
-        self.sensing_radius = 2;
+        self.sensing_radius = 2
 
         self.avoid_collisions = avoid_collisions
 
         # Initialize obstacles
         self.trees = self.create_random_trees(2)
         # self.trees = []
-        self.flooded_areas = self.create_random_flooded_areas(50)
+        self.flooded_areas = self.create_random_flooded_areas(40)
         self.obstacles = [p.getBasePositionAndOrientation(tree)[0] for tree in self.trees] + \
                          [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas] + \
                          [p.getBasePositionAndOrientation(self.ground_uid)[0]]
@@ -149,13 +149,55 @@ class DroneSimulation:
         for info in self.waypoints_list:
             drone_dict[str(self.drone_ids[i])] = info
             i+=1
-        print(drone_dict)
+        #print(drone_dict)
         return drone_dict
+    
+
+    # Function to invert the transformation
+    def inverse_transform_coordinates(self, x, y, latO = 29.7172, lonO = -95.4043, rot = -1.50002, scale = 1027.52):
+        print(f"THIS IS X {x}")
+        print(f"THIS IS Y {y}")
+        # Inverse of the scale factor
+        inv_scale = 1 / scale
+        
+        # Inverse rotation matrix (transpose of the original rotation matrix)
+        inverse_rotation_matrix = np.array([
+            [np.cos(rot), -np.sin(rot)],
+            [np.sin(rot), np.cos(rot)]
+        ])
+        
+        # Apply inverse rotation and scale
+        transformed_coords = np.array([x, y]) * inv_scale  # Reverse scaling
+        original_coords = inverse_rotation_matrix @ transformed_coords  # Apply inverse rotation
+        
+        # Add back the latitude and longitude offsets
+        lat = original_coords[0] + latO
+        lon = original_coords[1] + lonO
+        
+        return lat, lon
+    
+    def converted_flooded_coordinates(self, flooded_coordinates):
+        """
+        Converts a list of Cartesian coordinates into latitude and longitude tuples.
+        
+        Args:
+            flooded_coordinates (list of tuple): List of (x, y) coordinates to convert.
+        
+        Returns:
+            list of tuple: Converted coordinates in (latitude, longitude) format.
+        """
+        lat_lon_coordinates = []
+        for flood in flooded_coordinates:
+            print(f"THIS IS A FLOOD {type(flood)}")
+            print(f"{flood[0]}{flood[1]}{flood[2]}")
+            lat, lon = self.inverse_transform_coordinates(flood[0], flood[1])
+            lat_lon_coordinates.append((lat, lon))
+        return lat_lon_coordinates
 
     def load_ground(self):
         # Load the transparent plane URDF
         ground_uid = p.loadURDF("plane_transparent.urdf", [0,0,0.005])
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+        #p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         p.changeVisualShape(ground_uid, -1, rgbaColor=[0,1,0,1])
         # Load OBJ as visual and collision shapes
         obj_path = "/Users/andrewondara/drone-flood-detection/server/simulation/obj/riceu_env.obj"
@@ -203,7 +245,7 @@ class DroneSimulation:
             x_offset = info["lats"][0]
             y_offset = info["lons"][0]
             drone_id = self.load_drone([x_offset, y_offset, 1])
-            print(drone_id)
+            #print(drone_id)
             
             radius = random.uniform(3, 6)
             speed = random.uniform(50, 100)
@@ -217,8 +259,8 @@ class DroneSimulation:
     def create_random_trees(self, num_trees):
         tree_ids = []
         for _ in range(num_trees):
-            x = 5
-            y = 5
+            x = 4
+            y = 2
             z = 0.5
             tree_urdf = "./urdf/tree.urdf"
             tree_id = p.loadURDF(tree_urdf, basePosition=[x, y, z])
@@ -289,8 +331,7 @@ class DroneSimulation:
         # Convert from RGBA to BGR for OpenCV
         img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGBA2BGR)
         is_flooded = self.nearest_color(img_bgr)
-        print(is_flooded.all())
-        if is_flooded.all():
+        if 1 == 1:
             self.flooded_coordinates.append(drone_position)
             print(f"Flooded area detected at {drone_position}")
         
@@ -373,6 +414,29 @@ class DroneSimulation:
 
         # Show the plot
         plt.show()
+    def convert_floods(self, floods):
+        # Convert np.float64 to standard float and return a list of tuples
+        return [(float(lat), float(lon)) for lat, lon in floods]
+
+    def send_flood_data(self,converted_floods):
+        # Prepare the flooded data for sending
+        flooded = converted_floods
+        payload = {'flooded_coordinates': flooded}
+        
+        # Set the URL for the API endpoint
+        url = "http://168.5.58.43:5000/api/v1/converted_flood_points"  # Replace with your actual API endpoint
+        
+        # Set headers for the request
+        headers = {'Content-Type': 'application/json'}
+        
+        # Send the POST request
+        response = requests.post(url, data=json.dumps(payload), headers=headers)
+        
+        # Check the response
+        if response.status_code == 200:
+            print("Request successful")
+        else:
+            print(f"Request failed with status code {response.status_code}")
 
     def run_simulation(self):
         real_paths = dict()
@@ -406,7 +470,7 @@ class DroneSimulation:
                     DISTANCE_TOLERANCE = 2 # Distance tolerance if needed, set to 0 for strict equality
                     # only give the next waypoint 
                     if distance_to_waypoint <= DISTANCE_TOLERANCE and thisI+1 < len(waypoints["lats"]):
-                        print("giving next target point")
+                        #print("giving next target point")
                         t_x_prime = waypoints["lats"][thisI+1]
                         t_y_prime = waypoints["lats"][thisI+1]
                         t_z_prime = 1
@@ -415,7 +479,7 @@ class DroneSimulation:
                         i_bank[id] += 1
 
                     else:
-                        print("Continuing motion to waypoint")
+                        #print("Continuing motion to waypoint")
                         drone.update_position(current_time, self.drones, self.obstacles, current_destination_position, self.avoid_collisions)
 
                     
@@ -433,6 +497,10 @@ class DroneSimulation:
                 break
            
         # Plot the flooded areas after the simulation ends
+        flooded = self.converted_flooded_coordinates(self.flooded_coordinates)
+        converted_floods = self.convert_floods(flooded)
+
+        self.send_flood_data(converted_floods)
         self.plot_flooded_areas()
         self.plot_drone_paths(real_paths)
         print(real_paths)
