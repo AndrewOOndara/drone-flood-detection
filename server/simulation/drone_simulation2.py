@@ -443,10 +443,12 @@ class DroneSimulation:
         
 def latlon_2_sim(lat,lon):
         
+    ### UNTOUCHABLE CONSTANTS ###
     latO = 29.7172
     lonO = -95.4043
     rot = -1.50002
     scale = 1027.52
+    #############################
 
     rot_matrix = np.array([[np.cos(rot),np.sin(rot)],
                [-np.sin(rot),np.cos(rot)]])
@@ -463,9 +465,9 @@ def rice_demo(avoid_collision=True):
     simulation = DroneSimulation(waypoints_list, avoid_collision)
     simulation.run_simulation()
 
-def real_demo():
+def real_demo(api_url, avoid_collisions=True):
     print("doing real demo")
-    API_URL_BASE: str = "http://168.5.58.43:5000/api/v1/"   # wisha's address
+    API_URL_BASE: str = api_url   # wisha's address
     response = requests.get(API_URL_BASE + "waypoints")
     print(response)
     response.raise_for_status()
@@ -485,14 +487,17 @@ def real_demo():
 
     print("after transform: " + str(waypoints_list))
 
-    simulation = DroneSimulation(waypoints_list, True)
+    simulation = DroneSimulation(waypoints_list, avoid_collisions)
     simulation.run_simulation()
 
 # Instantiate and run the drone simulation with 5 drones
 if __name__ == "__main__":
-    # rice_demo(True)
 
-    real_demo()
+    avoid_collisions = True
+    # rice_demo(do_collision_checking)
+
+    api_url = "http://168.5.58.43:5000/api/v1/"
+    real_demo(api_url, avoid_collisions)
 
 
 
@@ -503,12 +508,6 @@ if __name__ == "__main__":
     #         lats.append(random.uniform(-10, 10))
     #         lons.append(random.uniform(-10, 10))
     #     drone_dict[str(70+i)] = {"lats": lats, "lons":lons}
-
-    
-
-
-
-    
 
     # print(drone_dict)
 
