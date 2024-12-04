@@ -306,7 +306,7 @@ class DroneSimulation:
         ax = fig.add_subplot(111, projection='3d')
 
         # Set up the colormap
-        cmap = plt.get_cmap('Spectral')  # You can change the colormap here
+        cmap = plt.get_cmap('viridis')  # You can change the colormap here
         norm = plt.Normalize()  # Normalize the time or index values
 
         # Iterate through each path in real_paths
