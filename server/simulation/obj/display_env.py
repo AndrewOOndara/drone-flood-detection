@@ -9,7 +9,7 @@ p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 p.setGravity(0, 0, -9.8)
 
 # Load OBJ as visual and collision shapes
-obj_path = "/Users/andrewondara/drone-flood-detection/server/simulation/obj/riceu_env.obj"
+obj_path = "/Users/admin/Documents/drone-flood-detection/server/simulation/obj/riceu_env.obj"
 visual_shape_id = p.createVisualShape(
     shapeType=p.GEOM_MESH,
     fileName=obj_path,

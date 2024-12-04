@@ -399,6 +399,9 @@ class DroneSimulation:
                     real_paths[id]["lats"].append(r_x)
                     real_paths[id]["lons"].append(r_y)
                     real_paths[id]["depth"].append(r_z)
+                else:
+                    drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
+
             # Delay for simulation timing
             time.sleep(1/60)
 
