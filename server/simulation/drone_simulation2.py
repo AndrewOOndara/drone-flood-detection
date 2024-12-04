@@ -62,15 +62,14 @@ class Drone:
 
         # Update the drone's position
         self.position = p.getBasePositionAndOrientation(self.drone_id)[0]
-
-        for o in nearby_obstacles:
-            if o == target_position:
-                print("********* COLLISION *********")
-
-        
         # Now, update the position of the sphere to match the drone's position
         p.resetBasePositionAndOrientation(self.sphere_id, self.position, [0, 0, 0, 1])  # No rotation
         # pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
+
+        for o in nearby_obstacles:
+            if o <= target_position:
+                print("********* COLLISION *********")
+
 
         print(f"Drone {self.drone_id} position: {self.position}")
         # print(f"Sphere {self.sphere_id} position: {pos}")
@@ -121,7 +120,8 @@ class DroneSimulation:
         self.sensing_radius = 2;
 
         # Initialize obstacles
-        self.trees = self.create_random_trees(20)
+        # self.trees = self.create_random_trees(20)
+        self.trees = []
         self.flooded_areas = self.create_random_flooded_areas(50)
         self.obstacles = [p.getBasePositionAndOrientation(tree)[0] for tree in self.trees] + \
                          [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas]
@@ -309,7 +309,7 @@ class DroneSimulation:
                     continue
                 t_x = waypoints["lats"][i]
                 t_y = waypoints["lons"][i]
-                t_z = 0.8
+                t_z = 1.5
                 target_position = (t_x,t_y,t_z)
                 drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
                 if (drone.getID()) == 71:
