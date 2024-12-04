@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import networkx
 import osmnx
+from geopandas import GeoDataFrame
 
 import floodzones
 # import evaluate
@@ -26,7 +27,7 @@ def dict_to_app_settings(d: dict) -> AppSettings:
         map_lat_lon = tuple(d['map_lat_lon']),
         map_radius = d['map_radius'],
         edges_to_visit = [tuple(ev) for ev in d['edges_to_visit']],
-        drones = [drone.Drone(drone_id=dv['drone_id'], base_station_lat_lon=tuple(dv['base_station_lat_lon']), battery_life_m=dv['battery_life_m']) for dv in d['drones']]
+        drones = [drone.Drone(drone_id=dv['drone_id'], base_station_id=dv['base_station_id'], battery_life_m=dv['battery_life_m']) for dv in d['drones']]
     )
 
 def _create_map_graph(lat_lon: tuple[float, float], dist_m: float, **osmnx_kwargs) -> networkx.MultiDiGraph:
@@ -38,7 +39,8 @@ class AppState:
         self.flood_db: floodzones.FloodDatabase = floodzones.FloodDatabase()
         # self.evaluator: evaluate.FloodEvaluator = evaluate.FloodEvaluator()
         self.map_graph: Optional[networkx.MultiDiGraph] = None
-        self.planned_path: Optional[dict[int, list[int]]] = None
+        self.planned_path: Optional[dict[int, planner.PlannedPath]] = None
+        self.map_edges_gdf: Optional[GeoDataFrame] = None
 
         # HARDCODE SOME PARAMETERS BECAUSE WE DON'T HAVE FRONTEND ADMIN PANEL YET
         # TODO: remove this hardcoding
@@ -50,16 +52,26 @@ class AppState:
             [(fr, to, True) for (fr, to) in zip(MAIN_STREET_NODES[:-1], MAIN_STREET_NODES[1:])]
         )
         shuffle(self.settings.edges_to_visit)
-        self.settings.drones = [drone.Drone(drone_id=drone_id, base_station_lat_lon=(29.717070,-95.400457), battery_life_m=2500) for drone_id in [123, 456, 789]]
+        self.settings.drones = [drone.Drone(drone_id=drone_id, base_station_id=2611472516, battery_life_m=10000) for drone_id in [123, 456, 789]]
+        self.load_map()
+        # self.flood_db.update_zone((-95.3985, 29.7175, -95.398, 29.72), floodzones.ZoneDbEntry(time=1,drone_id=1,flooded=True,confidence=0.5))
+        # self.flood_db.update_zone((-95.3985, 29.7175, -95.398, 29.72), floodzones.ZoneDbEntry(time=1,drone_id=1,flooded=True,confidence=0.5))
+        # self.flood_db.update_zone((-95.41, 29.71, -95.39, 29.73), floodzones.ZoneDbEntry(time=1,drone_id=1,flooded=True,confidence=0.5))
+        # self.flood_db.update_zone((-95.3985, 29.7175, -95.398, 29.72), floodzones.ZoneDbEntry(time=1,drone_id=1,flooded=True,confidence=0.5))
+
+    def load_map(self):
+        self.map_graph = _create_map_graph(self.settings.map_lat_lon, self.settings.map_radius)
+        egdf = osmnx.convert.graph_to_gdfs(self.map_graph, nodes=False, edges=True).droplevel(2)
+        self.map_edges_gdf = egdf[~egdf.index.duplicated()]
 
     def plan_round(self):
-        self.map_graph = _create_map_graph(self.settings.map_lat_lon, self.settings.map_radius)
-        self.planned_path = planner.plan_drones_path(
-            G=self.map_graph,
-            edges=self.settings.edges_to_visit,
-            drones=self.settings.drones,
-            scale_factor=1000,
-        )
+        if self.planned_path is None:
+            self.planned_path = planner.plan_drones_path(
+                self.map_graph,
+                edges=self.settings.edges_to_visit,
+                drones=self.settings.drones,
+                scale_factor=1000,
+            )
 
 __global_app_state = AppState()
 

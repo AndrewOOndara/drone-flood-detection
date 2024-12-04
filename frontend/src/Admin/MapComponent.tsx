@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline, useMap, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { EdgeInfo, LatLon, NodeInfo } from '../types';
 
 // Fix for default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -21,216 +22,137 @@ const blackIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-type Mode = 'node' | 'edge';
 
-interface NodeInfo {
-  nodeId: string;
-  position: [number, number];
+
+type MapProps = {
+  center: [number, number],
+  radius: number,
+  // onNodeSelect: null | ((coord: LatLon) => void),
+  // onEdgeSelect: null | ((edgeData: EdgeInfo) => void),
+  // displayNodes: {[k: string]: NodeInfo},
+  // displayEdges: EdgeInfo[],
+  children: React.ReactNode
+  // onPermanentNodeClick: (nodeId: string) => void,
 }
 
-interface EdgeInfo {
-  fromNodeId: string;
-  toNodeId: string;
-  fromPosition: [number, number];
-  toPosition: [number, number];
-}
 
-interface MapProps {
-  center: [number, number];
-  radius: number;
-  mode: Mode;
-  permanentNodes: NodeInfo[];
-  onNodeSelect: (nodeData: NodeInfo | null) => void;
-  onEdgeSelect: (edgeData: EdgeInfo | null) => void;
-  onPermanentNodeClick: (nodeId: string) => void;
-}
 
-const SelectionHandler: React.FC<{
-  mode: Mode;
-  permanentNodes: NodeInfo[];
-  onNodeSelect: (data: NodeInfo | null) => void;
-  onEdgeSelect: (data: EdgeInfo | null) => void;
-  onPermanentNodeClick: (nodeId: string) => void;
-}> = ({ mode, permanentNodes, onNodeSelect, onEdgeSelect, onPermanentNodeClick }) => {
-  const map = useMapEvents({
-    click: async (e) => {
-      const { lat, lng } = e.latlng;
+// const SelectionHandler = ({ onNodeSelect }: Pick<MapProps, "onNodeSelect">) => {
+//   const [justClicked, setJustClicked] = React.useState<{ [k: string]: [number, number] }>({});
+//   const clickCb = React.useCallback(async (e: L.LeafletMouseEvent) => {
+//     const { lat, lng } = e.latlng;
 
-      // Check if clicking on a permanent node first
-      const clickRadius = 20; // pixels
-      const clickPoint = map.latLngToContainerPoint(e.latlng);
-      const clickedPermanentNode = permanentNodes.find(node => {
-        const markerPoint = map.latLngToContainerPoint(L.latLng(node.position[0], node.position[1]));
-        const distance = clickPoint.distanceTo(markerPoint);
-        return distance < clickRadius;
-      });
+//     // https://stackoverflow.com/a/8084248
+//     const clickId = (Math.random() + 1).toString(36).substring(3);
 
-      if (clickedPermanentNode) {
-        onPermanentNodeClick(clickedPermanentNode.nodeId);
-        return;
-      }
+//     setJustClicked(clicks => ({
+//       ...clicks,
+//       [clickId]: [lat, lng]
+//     }));
+//     try {
+//       onNodeSelect?.([lat, lng]);
+//       // else if (onEdgeSelect) {
+//       //   const v = await queryForEdge(lat, lng);
+//       //   if (v) onEdgeSelect(v);
+//       // }
+//     }
+//     finally {
+//       setJustClicked(clicks => {
+//         let cloned = { ...clicks };
+//         delete cloned[clickId];
+//         return cloned;
+//       });
+//     }
 
-      try {
-        if (mode === 'node') {
-          const query = `
-            [out:json];
-            node(around:20,${lat},${lng});
-            out body;
-          `;
+//     // // Check if clicking on a permanent node first
+//     // const clickRadius = 20; // pixels
+//     // const clickPoint = map.latLngToContainerPoint(e.latlng);
+//     // const clickedPermanentNode = permanentNodes.find(node => {
+//     //   const markerPoint = map.latLngToContainerPoint(L.latLng(node.position[0], node.position[1]));
+//     //   const distance = clickPoint.distanceTo(markerPoint);
+//     //   return distance < clickRadius;
+//     // });
 
-          const response = await fetch('https://overpass-api.de/api/interpreter', {
-            method: 'POST',
-            body: query,
-          });
+//     // if (clickedPermanentNode) {
+//     //   onPermanentNodeClick(clickedPermanentNode.nodeId);
+//     //   return;
+//     // }
+//   }, [setJustClicked, onNodeSelect]);
+//   const map = useMapEvents({
+//     click: clickCb,
+//   });
 
-          const data = await response.json();
-
-          if (data.elements.length > 0) {
-            const nearestNode = data.elements[0];
-            onNodeSelect({
-              nodeId: nearestNode.id.toString(),
-              position: [nearestNode.lat, nearestNode.lon]
-            });
-          } else {
-            onNodeSelect(null);
-          }
-        } else {
-          const query = `
-            [out:json];
-            way(around:20,${lat},${lng})[highway];
-            (._;>;);
-            out body;
-          `;
-
-          const response = await fetch('https://overpass-api.de/api/interpreter', {
-            method: 'POST',
-            body: query,
-          });
-
-          const data = await response.json();
-
-          if (data.elements.length > 0) {
-            const ways = data.elements.filter((el: any) => el.type === 'way');
-            if (ways.length > 0) {
-              const nearestWay = ways[0];
-              const fromNodeId = nearestWay.nodes[0].toString();
-              const toNodeId = nearestWay.nodes[nearestWay.nodes.length - 1].toString();
-
-              const nodes = data.elements.filter((el: any) => el.type === 'node');
-              const fromNode = nodes.find((n: any) => n.id.toString() === fromNodeId);
-              const toNode = nodes.find((n: any) => n.id.toString() === toNodeId);
-
-              if (fromNode && toNode) {
-                onEdgeSelect({
-                  fromNodeId,
-                  toNodeId,
-                  fromPosition: [fromNode.lat, fromNode.lon],
-                  toPosition: [toNode.lat, toNode.lon]
-                });
-              }
-            }
-          } else {
-            onEdgeSelect(null);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        mode === 'node' ? onNodeSelect(null) : onEdgeSelect(null);
-      }
-    },
-  });
-
-  return null;
-};
+//   return <>
+//       {Object.entries(justClicked).map(([key, pos]) => {
+//         <CircleMarker
+//           key={key}
+//           center={pos}
+//           radius={12}
+//           color="orange"
+//         />
+//       })}
+//     </>
+// };
 
 const MapComponent = React.memo(function ({
   center,
   radius,
-  mode,
-  permanentNodes,
-  onNodeSelect,
-  onEdgeSelect,
-  onPermanentNodeClick
+  // onNodeSelect,
+  // displayNodes,
+  // displayEdges,
+  children
 }: MapProps) {
-  const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
-  const [selectedEdge, setSelectedEdge] = useState<EdgeInfo | null>(null);
-
-  const handleNodeSelect = (node: NodeInfo | null) => {
-    setSelectedNode(node);
-    setSelectedEdge(null);
-    onNodeSelect(node);
-  };
-
-  const handleEdgeSelect = (edge: EdgeInfo | null) => {
-    setSelectedEdge(edge);
-    setSelectedNode(null);
-    onEdgeSelect(edge);
-  };
-
   return (
-    <div className="map-container">
-      <MapContainer
-        center={[0.0, 0.0]}
-        zoom={13}
-        style={{ height: '100%', width: '100%' }}
-      >
-        <MapUpdater center={center} radius={radius}/>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    <MapContainer
+      center={[0.0, 0.0]}
+      zoom={13}
+      style={{ height: '100%', width: '100%' }}
+    >
+      <MapUpdater center={center} radius={radius} />
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      {children}
+      {/* <SelectionHandler
+        onNodeSelect={onNodeSelect}
+      /> */}
+      {/* Temporary Selection Display */}
+      {/* {selectedNode && mode === 'node' && (
+        <Marker position={selectedNode.position}>
+          <Popup>Node ID: {selectedNode.nodeId}</Popup>
+        </Marker>
+      )} */}
+          {/* <Popup>
+            Node ID: {node.nodeId}
+            <br />
+            Click to remove
+          </Popup> */}
+
+      {/* {Object.entries(displayNodes).map(([k, node]) => (
+        <Marker
+          key={k}
+          position={node.position}
+          icon={blackIcon}
+        >
+        </Marker>
+      ))}
+
+      {displayEdges.map((edge) =>
+        <EdgeLine
+          key={`${edge.fromNodeId}:${edge.toNodeId}`}
+          edge={edge}
         />
-        <SelectionHandler
-          mode={mode}
-          permanentNodes={permanentNodes}
-          onNodeSelect={handleNodeSelect}
-          onEdgeSelect={handleEdgeSelect}
-          onPermanentNodeClick={onPermanentNodeClick}
-        />
+      )}
+      <div style={{height: '400px', width: '400px', backgroundColor: 'white'}}>
 
-        {/* Permanent Nodes */}
-        {permanentNodes.map((node) => (
-          <Marker
-            key={node.nodeId}
-            position={node.position}
-            icon={blackIcon}
-          >
-            <Popup>
-              Node ID: {node.nodeId}
-              <br />
-              Click to remove
-            </Popup>
-          </Marker>
-        ))}
-
-        {/* Temporary Selection Display */}
-        {selectedNode && mode === 'node' && (
-          <Marker position={selectedNode.position}>
-            <Popup>Node ID: {selectedNode.nodeId}</Popup>
-          </Marker>
-        )}
-
-        {selectedEdge && mode === 'edge' && (
-          <>
-            <Marker position={selectedEdge.fromPosition}>
-              <Popup>Start Node: {selectedEdge.fromNodeId}</Popup>
-            </Marker>
-            <Marker position={selectedEdge.toPosition}>
-              <Popup>End Node: {selectedEdge.toNodeId}</Popup>
-            </Marker>
-            <Polyline
-              positions={[selectedEdge.fromPosition, selectedEdge.toPosition]}
-              color="blue"
-              weight={3}
-              opacity={0.7}
-            />
-          </>
-        )}
-      </MapContainer>
-    </div>
+      </div> */}
+    </MapContainer>
   );
 });
+
 const EARTH_RADIUS_M = 6E6;
-const MapUpdater = React.memo(function ({center: [lat, lon], radius} : {center: [number, number], radius: number}) {
+const MapUpdater = React.memo(function ({ center: [lat, lon], radius }: { center: [number, number], radius: number }) {
   const map = useMap();
   const lonAngle = radius * 180 / (EARTH_RADIUS_M * Math.PI);
   const latAngle = Math.cos(lon * Math.PI / 180) * radius * 180 / (EARTH_RADIUS_M * Math.PI);
@@ -238,7 +160,7 @@ const MapUpdater = React.memo(function ({center: [lat, lon], radius} : {center: 
     map.flyToBounds(L.latLngBounds(
       L.latLng(lat - latAngle, lon - lonAngle),
       L.latLng(lat + latAngle, lon + lonAngle),
-    ), {animate: false})
+    ), { animate: false })
   }, [lat, lon, map]);
   return null;
 })

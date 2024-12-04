@@ -5,7 +5,9 @@ import logging
 import osmnx
 import numpy as np
 import scipy
+from dataclasses import dataclass
 
+import utils
 import drone
 
 DEFAULT_LOGGER: logging.Logger = logging.getLogger()
@@ -34,15 +36,21 @@ def _cull_and_symmetrize(G: networkx.MultiDiGraph, key_nodes: list[int], leeway:
     sg = networkx.induced_subgraph(sg, selected_nodes_id)
     return sg.copy()
 
+@dataclass
+class PlannedPath:
+    path_length: float
+    lats: list[float]
+    lons: list[float]
+
 def plan_drones_path(
-    G: networkx.MultiGraph,
+    orig_G: networkx.MultiDiGraph,
     edges: list[tuple[int, int, bool]],
     drones: list[drone.Drone],
     scale_factor: float = 1000,
-) -> dict[int, list[int]]:
+) -> dict[int, PlannedPath]:
     logger = logging.getLogger("drone-planner")
 
-    G = _cull_and_symmetrize(G, list(set([p for (u, v, bidi) in edges for p in (u, v)])))
+    G = _cull_and_symmetrize(orig_G, list(set([p for (u, v, bidi) in edges for p in (u, v)])))
 
     forward_edges = [(fro, to) for (fro, to, bidi) in edges]
     backward_edges = [(to, fro) for (fro, to, bidi) in edges if bidi]
@@ -51,7 +59,8 @@ def plan_drones_path(
     
     all_edges = forward_edges + backward_edges
     n_all_edges = len(all_edges)
-    depot_nodes_raw = osmnx.distance.nearest_nodes(G, X=[d.base_station_lat_lon[1] for d in drones], Y=[d.base_station_lat_lon[0] for d in drones])
+    # depot_nodes_raw = osmnx.distance.nearest_nodes(G, X=[d.base_station_lat_lon[1] for d in drones], Y=[d.base_station_lat_lon[0] for d in drones])
+    depot_nodes_raw = [d.base_station_id for d in drones]
     depot_nodes = sorted(list(set(depot_nodes_raw)))
     AVOID_DEPOT_NODES = 10
     points = depot_nodes + [p for (u, v, bidi) in edges for p in (u, v)]
@@ -162,6 +171,8 @@ def plan_drones_path(
         logger.error(f"solution incomplete (only got {visited_edges} out of {wanted_edges} edges).")
         raise ValueError("incomplete solution")
 
+    paths = []
+    path_lengths = []
     output = dict()
     nodes_df = osmnx.graph_to_gdfs(G, nodes=True, edges=False)
     for drone, route in zip(drones, unfilled_routes):
@@ -174,10 +185,16 @@ def plan_drones_path(
             segment, l = path_map[(u, v)]
             drone_length += l
             this_route += segment
+        paths.append(utils.remove_consecutive_dup(this_route))
+        path_lengths.append(drone_length)
+
         output[drone.drone_id] = dict(
             path_length = drone_length,
             lats = nodes_df.loc[this_route]['y'].to_numpy().tolist(),
             lons = nodes_df.loc[this_route]['x'].to_numpy().tolist(),
         )
-    
-    return output
+    # return output
+    return {
+        drone.drone_id: PlannedPath(path_length=length, lats=[y for (y, x) in lls], lons=[x for (y, x) in lls])
+        for drone, lls, length in zip(drones, utils.fill_route(None, orig_G, paths), path_lengths)
+    }

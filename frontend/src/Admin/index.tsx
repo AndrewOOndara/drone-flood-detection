@@ -1,71 +1,76 @@
 import React, { useState } from 'react';
 import './index.css';
-import EditCoverageMap from './EditCoverageMap';
-import { AppSettings, DEFAULT_SETTINGS, Drone } from '../types';
-import { getSettings } from '../api';
+import { AppSettings, DEFAULT_SETTINGS } from '../types';
+import { apiGetSettings, saveSettings } from '../api';
+import MapComponent from './MapComponent';
+import { useCoverage } from './coverage';
+import { useDrone } from './drone';
+import { usePlan } from './plan';
 
+type UpdateSettings = React.Dispatch<React.SetStateAction<AppSettings>>;
 
-function Admin() {
+const Admin = React.memo(function (props: {}) {
     const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+    const requestRunning = React.useRef(false);
     React.useEffect(() => {
-        getSettings().then(s => {
+        if (requestRunning.current) return;
+        requestRunning.current = true;
+        apiGetSettings().then(s => {
+            console.debug("Got settings");
+            console.debug(s);
             setSettings(s);
+        }).finally(() => {
+            requestRunning.current = false;
         });
-    }, []);
-    const updateSettings = React.useCallback((ps: Partial<AppSettings>) => {
-        setSettings(s => ({ ...s, ...ps }));
-    }, [setSettings])
-    return <React.Fragment>
-        <div className="admin-sections-container">
-            <Section name="Coverage">
-                <EditCoverageMap
-                    edges_to_visit={settings.edges_to_visit}
-                    map_lat_lon={settings.map_lat_lon}
-                    map_radius={settings.map_radius}
-                    updateSettings={updateSettings}
-                />
-            </Section>
-            <Section name="Drones">
-                <DronesList drones={settings.drones} updateSettings={updateSettings} />
-            </Section>
+    }, [setSettings]);
+    const save = React.useCallback(() => {
+        if (requestRunning.current) return;
+        requestRunning.current = true;
+        saveSettings(settings).finally(() => {
+            requestRunning.current = false;
+        });
+    }, [settings]);
+
+    const [covController, covUi] = useCoverage(settings, setSettings);
+    const [droController, droUi] = useDrone(settings, setSettings);
+    const [plaController, plaUi] = usePlan(settings);
+
+    return <>
+        <div className="app-title-row">
+            <h1 className="app-title">HPE Admin Controls</h1>
+            {plaUi}
+            <button onClick={save}>💾</button>
         </div>
-    </React.Fragment>
-}
+        <div className="admin-container">
+            <section className="admin-map-container">
+                <MapComponent
+                    center={settings.map_lat_lon}
+                    radius={settings.map_radius}
+                >
+                    {covController}
+                    {droController}
+                    {plaController}
+                </MapComponent>
+            </section>
+            <div className="admin-sections-container">
+                <Section name="Coverage">
+                    {covUi}
+                </Section>
+                <Section name="Drones">
+                    {droUi}
+                </Section>
+            </div>
+        </div>
+    </>
+});
 
 function Section(props: { name: string, children: React.ReactNode }) {
     return (
-        <div className="admin-section shadowed">
+        <div className="admin-section">
             <h2 className="admin-section-header">{props.name}</h2>
             {props.children}
         </div>
     )
 }
-
-function DronesList({ drones, updateSettings }: Pick<AppSettings, "drones"> & { updateSettings: (s: Partial<AppSettings>) => void }) {
-    const updateDrone = React.useCallback((drone_id: number, changes: Partial<Drone>) => {
-        updateSettings({
-            drones: drones.map(d => (
-                d.drone_id == drone_id ? { ...d, ...changes } : d
-            ))
-        })
-    }, [updateSettings]);
-    return (
-        <ol className="admin-drones-list">
-            {drones.map(d => (
-                <DroneItem
-                    key={d.drone_id}
-                    updateDrone={updateDrone}
-                    {...d}
-                />
-            ))}
-        </ol>
-    )
-}
-
-const DroneItem = React.memo(function (props: Drone & { updateDrone: (drone_id: number, d: Partial<Drone>) => void }) {
-    return <div className="admin-drone-box">
-        <span>ID: {props.drone_id}</span>
-    </div>
-})
 
 export default Admin;
