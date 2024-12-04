@@ -42,15 +42,17 @@ def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_colli
     """
     # Get the current position of the drone
     drone_pos, _ = p.getBasePositionAndOrientation(drone_id)
+    print(drone_pos)
+    print(target_pos)
 
     # Calculate a movement vector towards the target
     movement_vector = np.array(target_pos) - np.array(drone_pos)
-    movement_vector = movement_vector / np.linalg.norm(movement_vector) * speed
+    if (movement_vector != np.zeros(3)).all():
+        movement_vector = movement_vector / np.linalg.norm(movement_vector) * speed
 
     # Calculate avoidance vector based on nearby obstacles
     if avoid_collisions:
         avoidance_vector = calculate_avoidance_vector(drone_pos, obstacles)*10
-        print("avoidance vector = " + str(avoidance_vector))
         print("movement vector = " + str(movement_vector))
     else:
         avoidance_vector = np.zeros(3)

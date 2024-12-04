@@ -42,6 +42,7 @@ class Drone:
             baseVisualShapeIndex=sphere_visual_shape,  # Visual shape is the red sphere
             basePosition=position  # Initial position of the sphere
         )
+        p.setCollisionFilterGroupMask(sphere_id, -1, 0, 0)
         
         return sphere_id
 
@@ -58,17 +59,19 @@ class Drone:
         nearby_obstacles = self.get_nearby_obstacles(obstacles, other_drone_positions)
 
         # Use motion planning to move towards the target while avoiding obstacles, including other drones
-        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, speed=50, avoid_collisions=avoid_collisions)
+        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, self.speed, avoid_collisions=avoid_collisions)
 
         # Update the drone's position
         self.position = p.getBasePositionAndOrientation(self.drone_id)[0]
         # Now, update the position of the sphere to match the drone's position
         p.resetBasePositionAndOrientation(self.sphere_id, self.position, [0, 0, 0, 1])  # No rotation
-        # pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
+        pos,ori = p.getBasePositionAndOrientation(self.sphere_id)
+        # if p.getBasePositionAndOrientation(self.sphere_id)[0] != self.position:
+        #     print("SPHERE IS BEING BADDDDD")
 
-        for o in nearby_obstacles:
-            if o <= target_position:
-                print("********* COLLISION *********")
+        # for o in nearby_obstacles:
+        #     if o == target_position:
+        #         print("********* COLLISION *********")
 
 
         print(f"Drone {self.drone_id} position: {self.position}")
@@ -106,25 +109,26 @@ class DroneSimulation:
         # Initialize PyBullet and load resources
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         
         # Load environment elements
-        self.load_ground()
+        self.ground_uid = self.load_ground()
 
         # Parameters
         self.radius = 5
         self.altitude = 2
-        self.speed = 100
+        self.speed = 50
+        self.sensing_radius = 2;
 
         self.avoid_collisions = avoid_collisions
 
-        self.sensing_radius = 2;
-
         # Initialize obstacles
-        # self.trees = self.create_random_trees(20)
-        self.trees = []
+        self.trees = self.create_random_trees(20)
+        # self.trees = []
         self.flooded_areas = self.create_random_flooded_areas(50)
         self.obstacles = [p.getBasePositionAndOrientation(tree)[0] for tree in self.trees] + \
-                         [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas]
+                         [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas] + \
+                         [p.getBasePositionAndOrientation(self.ground_uid)[0]]
         
         self.waypoints_list = waypoints_list
 
@@ -144,17 +148,21 @@ class DroneSimulation:
         for info in self.waypoints_list:
             drone_dict[str(self.drone_ids[i])] = info
             i+=1
+        print(drone_dict)
         return drone_dict
 
     def load_ground(self):
         # Load the transparent plane URDF
         ground_uid = p.loadURDF("plane_transparent.urdf", [0, 0, 0])
+        p.setCollisionFilterGroupMask(ground_uid, -1, collisionFilterGroup=0, collisionFilterMask=1|2)
         p.changeVisualShape(ground_uid, -1, rgbaColor=[0, 1, 0, 1])  # Solid green color
+        return ground_uid
 
     def load_drone(self, position):
         # Load the drone model at a specified position
         drone_urdf = "./urdf/quadroter.urdf"
         drone_id = p.loadURDF(drone_urdf, basePosition=position, useFixedBase=False)
+        p.setCollisionFilterGroupMask(drone_id, -1, collisionFilterGroup=1, collisionFilterMask=0)
 
         # Short delay after loading the drone
         time.sleep(1)
@@ -187,6 +195,7 @@ class DroneSimulation:
             z = 0.5
             tree_urdf = "./urdf/tree.urdf"
             tree_id = p.loadURDF(tree_urdf, basePosition=[x, y, z])
+            p.setCollisionFilterGroupMask(tree_id, -1, collisionFilterGroup=2, collisionFilterMask=0)
             tree_ids.append(tree_id)
         return tree_ids
 
@@ -292,39 +301,114 @@ class DroneSimulation:
         plt.savefig("flooded_areas_map.png")
         plt.show()
 
+    def plot_drone_paths(self, real_paths):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Set up the colormap
+        cmap = plt.get_cmap('Spectral')  # You can change the colormap here
+        norm = plt.Normalize()  # Normalize the time or index values
+
+        # Iterate through each path in real_paths
+        for id in real_paths:
+            lats = real_paths[id]["lats"]
+            lons = real_paths[id]["lons"]
+            depth = real_paths[id]["depth"]
+
+            # Generate a time-like variable (e.g., index) for coloring the line
+            time = np.arange(len(lons))  # Use the index of the points as a proxy for time
+            
+            # Normalize the time values for color mapping
+            norm_time = plt.Normalize(time.min(), time.max())
+
+            # Plot each segment of the line with a color based on time
+            for i in range(len(lons) - 1):
+                x = [lons[i], lons[i + 1]]
+                y = [lats[i], lats[i + 1]]
+                z = [depth[i], depth[i + 1]]
+                
+                # Normalize time for each segment
+                color = cmap(norm_time(time[i]))  # Color based on the time of the point
+                
+                # Plot the segment with the corresponding color
+                ax.plot(x, y, z, color=color, lw=2)
+
+        # Adding a colorbar for the colormap
+        mappable = plt.cm.ScalarMappable(cmap=cmap, norm=norm_time)
+        mappable.set_array(time)
+        cbar = fig.colorbar(mappable, ax=ax, shrink=0.5, aspect=5)
+        cbar.set_label('Time')
+
+        # Set axis labels
+        ax.set_xlabel('Lats')
+        ax.set_ylabel('Lons')
+        ax.set_zlabel('Depth')
+
+        # Show the plot
+        plt.show()
+
     def run_simulation(self):
-        path = []
-        i = 0
+        real_paths = dict()
+        i_bank = dict()
+        for drone in self.drones:
+            real_paths[str(drone.getID())] = {"lats":[], "lons":[], "depth":[]}
+            i_bank[str(drone.getID())] = 1
+        
         while True:
             p.stepSimulation()
             current_time = time.time() - self.start_time
-            print(self.drones)
+
             # Update position of each drone independently
             for drone in self.drones:
                 # Capture drone POV and save the image
                 self.capture_aerial_view(drone)
                 id = str(drone.getID())
                 waypoints = self.drone_dict[id]
-                if i >= len(waypoints["lats"]):
-                    continue
-                t_x = waypoints["lats"][i]
-                t_y = waypoints["lons"][i]
-                t_z = 1.5
-                target_position = (t_x,t_y,t_z)
-                drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
-                if (drone.getID()) == 71:
-                    path.append(drone.position)
-                
-            i+=1
-            # Delay for simulation timing
-            time.sleep(1./240.)
+                thisI = i_bank[id]
+                if thisI < len(waypoints["lats"]):
+                    
+                    drone_pos = drone.position
+                    
+                    t_x = waypoints["lats"][thisI]
+                    t_y = waypoints["lons"][thisI]
+                    t_z = 1
+                    current_destination_position = np.array([t_x,t_y,t_z])
 
-            if current_time > 20:  # Run for 10 seconds
+                    distance_to_waypoint = np.linalg.norm(drone_pos - current_destination_position)
+                    
+                    DISTANCE_TOLERANCE = 2 # Distance tolerance if needed, set to 0 for strict equality
+                    # only give the next waypoint 
+                    if distance_to_waypoint <= DISTANCE_TOLERANCE and thisI+1 < len(waypoints["lats"]):
+                        print("giving next target point")
+                        t_x_prime = waypoints["lats"][thisI+1]
+                        t_y_prime = waypoints["lats"][thisI+1]
+                        t_z_prime = 1
+                        target_position = np.array([t_x_prime,t_y_prime,t_z_prime])
+                        drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
+                        i_bank[id] += 1
+
+                    else:
+                        print("Continuing motion to waypoint")
+                        drone.update_position(current_time, self.drones, self.obstacles, current_destination_position, self.avoid_collisions)
+
+                    
+                    # keep track of real drone position
+                    r_x = drone_pos[0]
+                    r_y = drone_pos[1]
+                    r_z = drone_pos[2]
+                    real_paths[id]["lats"].append(r_x)
+                    real_paths[id]["lons"].append(r_y)
+                    real_paths[id]["depth"].append(r_z)
+            # Delay for simulation timing
+            time.sleep(1/60)
+
+            if current_time > 5:  
                 break
            
         # Plot the flooded areas after the simulation ends
         self.plot_flooded_areas()
-        # print(path)
+        self.plot_drone_paths(real_paths)
+        print(real_paths)
         
 
 def collision_demo(avoid_collision=True):
