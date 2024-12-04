@@ -7,25 +7,44 @@ interface NodeInfo {
 }
 
 interface PathSegment {
-  fromNode: NodeInfo;
-  toNode: NodeInfo;
+  from: [number, number];
+  to: [number, number];
 }
 
-const planPath = async (nodes: NodeInfo[]): Promise<PathSegment[]> => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+const planPath = async (coordinates: [number, number][]): Promise<PathSegment[]> => {
+    try {
+      const response = await fetch('http://168.5.58.43:5000/api/v1/find_path', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(coordinates)
+      });
   
-  // For demonstration, create a path that connects nodes in sequence
-  // Replace this with your actual API call
-  const segments: PathSegment[] = [];
-  for (let i = 0; i < nodes.length - 1; i++) {
-    segments.push({
-      fromNode: nodes[i],
-      toNode: nodes[i + 1]
-    });
-  }
-  return segments;
-};
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const data = await response.json();
+      console.log("data")
+      console.log(data)
+      console.log(data.length)
+      // Convert the response into PathSegments
+      const segments: PathSegment[] = [];
+      for (let i = 0; i < data.length - 1; i++) {
+        segments.push({
+          from: data[i],
+          to: data[i + 1]
+        });
+      }
+      console.log("Size of segs")
+      console.log(segments.length)
+      return segments;
+    } catch (error) {
+      console.error('Error in planPath:', error);
+      throw error;
+    }
+  };
 
 function App() {
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
@@ -54,7 +73,8 @@ function App() {
 
     setIsPlanning(true);
     try {
-      const path = await planPath(permanentNodes);
+      const path = await planPath(permanentNodes.map(node => node.position));
+      console.log(path.length)
       setPlannedPath(path);
     } catch (error) {
       console.error('Error planning path:', error);
@@ -70,17 +90,7 @@ function App() {
       {selectedNode ? (
         <div className="p-4 mb-4 bg-blue-100 rounded">
           <h3 className="font-bold mb-2">Selected Node</h3>
-          <p>Node ID: {selectedNode.nodeId}</p>
-          <p>Position: ({selectedNode.position.join(', ')})</p>
           <div className="mt-2 flex gap-4">
-            <a 
-              href={`https://www.openstreetmap.org/node/${selectedNode.nodeId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              View Node on OSM
-            </a>
             <button
               onClick={addCurrentSelection}
               className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
