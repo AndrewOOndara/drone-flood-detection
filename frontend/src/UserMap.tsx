@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Rectangle, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Rectangle, Polyline, useMap} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -32,6 +32,14 @@ interface PathSegment {
   to: [number, number];
 }
 
+interface FloodZone {
+  bbox: [number, number, number, number];
+  confidence: number;
+  drone_id: number;
+  flooded: boolean;
+  time: number;
+}
+
 interface Rectangle {
   id: string;
   bounds: [number, number, number, number]; // [x0, x1, y0, y1]
@@ -47,11 +55,10 @@ interface MapProps {
   plannedPath: PathSegment[] | null;
 }
 
-
 // Helper function to check if a point is inside a rectangle
 const isPointInRectangle = (lat: number, lng: number, rect: [number, number, number, number]): boolean => {
-  const [x0, x1, y0, y1] = rect;
-  return lng >= x0 && lng <= x1 && lat >= y0 && lat <= y1;
+  const [long_min, lat_min, long_max, lat_max] = rect;
+  return lng >= long_min && lng <= long_max && lat >= lat_min && lat <= lat_max;
 };
 
 // Hoverable Rectangle Component
@@ -153,36 +160,6 @@ const SelectionHandler: React.FC<{
   return null;
 };
 
-// Main Map Component
-
-// Mock API with shifting rectangles
-const fetchRectangles = async (): Promise<Rectangle[]> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  // Get a small random shift for the rectangles
-  const shift = (Math.random() - 0.5) * 0.02; // Random shift between -0.01 and 0.01
-
-  return [
-    {
-      id: 'rect-1',
-      bounds: [-0.09 + shift, -0.08 + shift, 51.5, 51.51],
-      name: 'Restricted Zone A'
-    },
-    {
-      id: 'rect-2',
-      bounds: [-0.11 + shift, -0.09 + shift, 51.49, 51.505],
-      name: 'Restricted Zone B'
-    },
-    {
-      id: 'rect-3',
-      bounds: [-0.13 + shift, -0.12 + shift, 51.51, 51.52],
-      name: 'Restricted Zone C'
-    }
-  ];
-};
-
-// Previous helper functions and sub-components remain the same...
-
 const UserMap: React.FC<MapProps> = ({ 
   center, 
   zoom, 
@@ -191,14 +168,44 @@ const UserMap: React.FC<MapProps> = ({
   onPermanentNodeClick,
   plannedPath
 }) => {
+
+  const initialBounds = new L.LatLngBounds(
+    [center[0] - 0.1, center[1] - 0.1], // Southwest corner
+    [center[0] + 0.1, center[1] + 0.1]  // Northeast corner
+  );
+
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<NodeInfo | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
+  const [mapBounds, setMapBounds] = useState<L.LatLngBounds>(initialBounds);
+
+  
+  const BoundsTracker = () => {
+    const map = useMapEvents({
+      moveend: () => {
+        setMapBounds(map.getBounds());
+      },
+      zoomend: () => {
+        setMapBounds(map.getBounds());
+      }
+    });
+    
+    // Set initial bounds
+    useEffect(() => {
+      setMapBounds(map.getBounds());
+    }, [map]);
+
+    return null;
+  };
 
   const loadRectangles = async (isRefresh: boolean = false) => {
+    console.log("Loadin rectangles")
+    console.log(mapBounds)
+    if (!mapBounds) return;
+
     if (isRefresh) {
       setIsRefreshing(true);
     } else {
@@ -206,9 +213,37 @@ const UserMap: React.FC<MapProps> = ({
     }
     setError(null);
 
+    console.log("Refresh vibe")
+
+    const params = new URLSearchParams({
+      x0: mapBounds.getWest().toString(),
+      x1: mapBounds.getEast().toString(),
+      y0: mapBounds.getSouth().toString(),
+      y1: mapBounds.getNorth().toString(),
+    });
+
+    console.log(params)
+
     try {
-      const fetchedRectangles = await fetchRectangles();
-      setRectangles(fetchedRectangles);
+      const response = await fetch(`http://168.5.58.43:5000/api/v1/zones?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      console.log("Response")
+      const floodData: FloodZone[] = await response.json();
+    
+      // Transform flood data into rectangles, only keeping flooded areas
+      const fetchedZones: Rectangle[] = floodData
+        .filter(zone => zone.flooded)
+        .map((zone, index) => ({
+          id: `flood-zone-${index}`,
+          bounds: zone.bbox,
+          name: `Flood Zone ${index + 1}`
+        }));      console.log(fetchedZones)
+      // Assuming the API returns an array of rectangles in the format:
+      // [{ id: string, bounds: [number, number, number, number], name: string }]
+      setRectangles(fetchedZones);
       setLastRefreshTime(new Date());
     } catch (err) {
       setError('Failed to load restricted areas');
@@ -219,10 +254,14 @@ const UserMap: React.FC<MapProps> = ({
     }
   };
 
-  // Initial load
-  useEffect(() => {
-    loadRectangles();
-  }, []);
+
+  // // Initial load
+  // useEffect(() => {
+  //   console.log("In initial load")
+  //   if (mapBounds) {
+  //     loadRectangles(true);
+  //   }
+  // }, [mapBounds]);
 
   // Refresh every 10 seconds
   useEffect(() => {
@@ -231,7 +270,7 @@ const UserMap: React.FC<MapProps> = ({
     }, 10000);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [mapBounds]);
 
   const handleNodeSelect = (node: NodeInfo | null) => {
     setSelectedNode(node);
@@ -239,7 +278,9 @@ const UserMap: React.FC<MapProps> = ({
   };
 
   const handleManualRefresh = () => {
-    loadRectangles(true);
+    if (mapBounds) {
+      loadRectangles(true);
+    }
   };
 
   if (isLoading) {
@@ -352,23 +393,26 @@ const UserMap: React.FC<MapProps> = ({
         <MapContainer 
           center={center} 
           zoom={zoom} 
+        
           style={{ height: '100%', width: '100%' }}
         >
+          <BoundsTracker />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          {/* Rectangles with transition effect */}
           {rectangles.map((rect) => (
             <HoverableRectangle
               key={rect.id}
-              bounds={[[rect.bounds[2], rect.bounds[0]], [rect.bounds[3], rect.bounds[1]]]}
+              bounds={[
+                [rect.bounds[1], rect.bounds[0]], // [lat_min, long_min]
+                [rect.bounds[3], rect.bounds[2]]  // [lat_max, long_max]
+              ]}
               name={`${rect.name} (Updated: ${lastRefreshTime.toLocaleTimeString()})`}
             />
           ))}
 
-          {/* Rest of the component remains the same... */}
           {plannedPath && plannedPath.map((segment, index) => (
             <Polyline
               key={index}

@@ -12,18 +12,38 @@ interface PathSegment {
 }
 
 const planPath = async (coordinates: [number, number][]): Promise<PathSegment[]> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // For demonstration, create a path that connects coordinates in sequence
-    const segments: PathSegment[] = [];
-    for (let i = 0; i < coordinates.length - 1; i++) {
-      segments.push({
-        from: coordinates[i],
-        to: coordinates[i + 1]
+    try {
+      const response = await fetch('http://168.5.58.43:5000/api/v1/find_path', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(coordinates)
       });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const data = await response.json();
+      console.log("data")
+      console.log(data)
+      console.log(data.length)
+      // Convert the response into PathSegments
+      const segments: PathSegment[] = [];
+      for (let i = 0; i < data.length - 1; i++) {
+        segments.push({
+          from: data[i],
+          to: data[i + 1]
+        });
+      }
+      console.log("Size of segs")
+      console.log(segments.length)
+      return segments;
+    } catch (error) {
+      console.error('Error in planPath:', error);
+      throw error;
     }
-    return segments;
   };
 
 function App() {
@@ -54,6 +74,7 @@ function App() {
     setIsPlanning(true);
     try {
       const path = await planPath(permanentNodes.map(node => node.position));
+      console.log(path.length)
       setPlannedPath(path);
     } catch (error) {
       console.error('Error planning path:', error);
@@ -69,17 +90,7 @@ function App() {
       {selectedNode ? (
         <div className="p-4 mb-4 bg-blue-100 rounded">
           <h3 className="font-bold mb-2">Selected Node</h3>
-          <p>Node ID: {selectedNode.nodeId}</p>
-          <p>Position: ({selectedNode.position.join(', ')})</p>
           <div className="mt-2 flex gap-4">
-            <a 
-              href={`https://www.openstreetmap.org/node/${selectedNode.nodeId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              View Node on OSM
-            </a>
             <button
               onClick={addCurrentSelection}
               className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
