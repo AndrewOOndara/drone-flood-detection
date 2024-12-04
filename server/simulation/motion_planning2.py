@@ -52,9 +52,10 @@ def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_colli
 
     # If landing mode is enabled, slow the drone's descent
     if initiate_landing:
-        landing_speed = 2  # You can adjust this to control the landing speed
+        landing_speed = 10  # You can adjust this to control the landing speed
         movement_vector[2] = -landing_speed  # Lower the drone in the Z-axis (vertical)
 
+    
 
     # Calculate avoidance vector based on nearby obstacles
     if avoid_collisions:
@@ -70,4 +71,12 @@ def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_colli
 
     # Apply the calculated force to the drone
     p.applyExternalForce(drone_id, -1, forceObj=force, posObj=drone_pos, flags=p.WORLD_FRAME)
+
+    # if initiate_landing:
+    #     if drone_pos[2] <= 0.5:  # If the drone is very close to the ground
+    #         print("Drone has landed.")
+    #         # Stop the drone from moving further
+    #         p.resetBaseVelocity(drone_id, linearVelocity=[0, 0, 0], angularVelocity=[0, 0, 0])
+    #         p.resetBasePositionAndOrientation(drone_id, [drone_pos[0], drone_pos[1], 0], [0, 0, 0, 1])  # Set the height to 0 (ground level)    
+        
 

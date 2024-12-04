@@ -6,7 +6,7 @@ import random
 import math
 import cv2  
 import os 
-import osmnx
+# import osmnx
 from scipy.spatial import KDTree
 from PIL import Image
 from motion_planning2 import apply_motion_planning  # Import the motion planning function
@@ -53,14 +53,14 @@ class Drone:
     def getPos(self):
         return self.position
 
-    def update_position(self, current_time, drones, obstacles, target_position, avoid_collisions):
+    def update_position(self, current_time, drones, obstacles, target_position, avoid_collisions,initiate_landing):
        
         # Gather positions of other drones to avoid collisions
         other_drone_positions = [d.getPos() for d in drones if d.getID() != self.drone_id]
         nearby_obstacles = self.get_nearby_obstacles(obstacles, other_drone_positions)
 
         # Use motion planning to move towards the target while avoiding obstacles, including other drones
-        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, self.speed, avoid_collisions=avoid_collisions)
+        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, self.speed, avoid_collisions=avoid_collisions, initiate_landing=initiate_landing)
 
         # Update the drone's position
         self.position = p.getBasePositionAndOrientation(self.drone_id)[0]
@@ -110,7 +110,7 @@ class DroneSimulation:
         # Initialize PyBullet and load resources
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        #p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         
         # Load environment elements
         self.ground_uid = self.load_ground()
@@ -158,7 +158,7 @@ class DroneSimulation:
         p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         p.changeVisualShape(ground_uid, -1, rgbaColor=[0,1,0,1])
         # Load OBJ as visual and collision shapes
-        obj_path = "/Users/andrewondara/drone-flood-detection/server/simulation/obj/riceu_env.obj"
+        obj_path = "/Users/admin/Documents/drone-flood-detection/server/simulation/obj/riceu_env.obj"
         visual_shape_id = p.createVisualShape(
             shapeType=p.GEOM_MESH,
             fileName=obj_path,
@@ -411,12 +411,12 @@ class DroneSimulation:
                         t_y_prime = waypoints["lats"][thisI+1]
                         t_z_prime = 1
                         target_position = np.array([t_x_prime,t_y_prime,t_z_prime])
-                        drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
+                        drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions, False)
                         i_bank[id] += 1
 
                     else:
                         print("Continuing motion to waypoint")
-                        drone.update_position(current_time, self.drones, self.obstacles, current_destination_position, self.avoid_collisions)
+                        drone.update_position(current_time, self.drones, self.obstacles, current_destination_position, self.avoid_collisions, False)
 
                     
                     # keep track of real drone position
@@ -426,19 +426,20 @@ class DroneSimulation:
                     real_paths[id]["lats"].append(r_x)
                     real_paths[id]["lons"].append(r_y)
                     real_paths[id]["depth"].append(r_z)
-                else:
-                    drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
+                # elif thisI ==  len(waypoints["lats"]):
+                #     print("doing landing for drone " + drone.getID())
+                #     drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions, True)
 
             # Delay for simulation timing
-            time.sleep(1/60)
+            time.sleep(1/240)
 
-            if current_time > 5:  
+            if current_time > 10:  
                 break
            
         # Plot the flooded areas after the simulation ends
         self.plot_flooded_areas()
         self.plot_drone_paths(real_paths)
-        print(real_paths)
+        # print(real_paths)
         
 
 def collision_demo(avoid_collision=True):
