@@ -120,13 +120,13 @@ class DroneSimulation:
         self.altitude = 2
         self.speed = 50
         self.sensing_radius = 2
-
+        self.number_of_floods = 1000
         self.avoid_collisions = avoid_collisions
 
         # Initialize obstacles
         self.trees = self.create_random_trees(2)
         # self.trees = []
-        self.flooded_areas = self.create_random_flooded_areas(40)
+        self.flooded_areas = self.create_random_flooded_areas(self.number_of_floods)
         self.obstacles = [p.getBasePositionAndOrientation(tree)[0] for tree in self.trees] + \
                          [p.getBasePositionAndOrientation(flood)[0] for flood in self.flooded_areas] + \
                          [p.getBasePositionAndOrientation(self.ground_uid)[0]]
@@ -200,7 +200,7 @@ class DroneSimulation:
         #p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
         p.changeVisualShape(ground_uid, -1, rgbaColor=[0,1,0,1])
         # Load OBJ as visual and collision shapes
-        obj_path = "/Users/admin/Documents/drone-flood-detection/server/simulation/obj/riceu_env.obj"
+        obj_path = "/Users/andrewondara/drone-flood-detection/server/simulation/obj/riceu_env.obj"
         visual_shape_id = p.createVisualShape(
             shapeType=p.GEOM_MESH,
             fileName=obj_path,
@@ -422,10 +422,8 @@ class DroneSimulation:
         # Prepare the flooded data for sending
         flooded = converted_floods
         payload = {'flooded_coordinates': flooded}
-        
         # Set the URL for the API endpoint
         url = "http://168.5.58.43:5000/api/v1/converted_flood_points"  # Replace with your actual API endpoint
-        
         # Set headers for the request
         headers = {'Content-Type': 'application/json'}
         
@@ -503,7 +501,7 @@ class DroneSimulation:
         # Plot the flooded areas after the simulation ends
         flooded = self.converted_flooded_coordinates(self.flooded_coordinates)
         converted_floods = self.convert_floods(flooded)
-
+        print()
         self.send_flood_data(converted_floods)
         self.plot_flooded_areas()
         self.plot_drone_paths(real_paths)
@@ -562,10 +560,10 @@ def real_demo(api_url, avoid_collisions=True):
 if __name__ == "__main__":
 
     avoid_collisions = True
-    # rice_demo(do_collision_checking)
+    rice_demo(avoid_collisions)
 
     api_url = "http://168.5.58.43:5000/api/v1/"
-    real_demo(api_url, avoid_collisions)
+    # real_demo(api_url, avoid_collisions)
 
 
 

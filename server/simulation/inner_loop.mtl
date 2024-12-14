@@ -1,0 +1,278 @@
+# This file was created by OSM2World 0.4.0-SNAPSHOT - https://osm2world.org
+
+
+newmtl ASPHALT_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Asphalt010/Asphalt010_Color.png
+map_Kd textures/cc0textures/Asphalt010/Asphalt010_Color.png
+Ni 1
+illum 2
+
+newmtl CONCRETE_0
+Ns 92.156863
+Ka 0.27450982 0.27450982 0.27450982
+Kd 0.27450982 0.27450982 0.27450982
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Concrete034/Concrete034_Color.jpg
+map_Kd textures/cc0textures/Concrete034/Concrete034_Color.jpg
+Ni 1
+illum 2
+
+newmtl TREE_BILLBOARD_BROAD_LEAVED_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka -clamp on arbaro_tree_broad_leaved.png
+map_Kd -clamp on arbaro_tree_broad_leaved.png
+map_d -clamp on arbaro_tree_broad_leaved.png
+Ni 1
+illum 2
+
+newmtl MAT_5_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Asphalt010/Asphalt010_Color.png
+map_Kd textures/cc0textures/Asphalt010/Asphalt010_Color.png
+Ni 1
+illum 2
+
+newmtl MAT_5_1
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/road_marking_crossing.png
+map_Kd textures/road_marking_crossing.png
+Ni 1
+illum 2
+
+newmtl TREE_BILLBOARD_CONIFEROUS_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka -clamp on textures/arbaro_tree_coniferous.png
+map_Kd -clamp on textures/arbaro_tree_coniferous.png
+map_d -clamp on textures/arbaro_tree_coniferous.png
+Ni 1
+illum 2
+
+newmtl SAND_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Ground033/Ground033_Color.jpg
+map_Kd textures/cc0textures/Ground033/Ground033_Color.jpg
+Ni 1
+illum 2
+
+newmtl PAVING_STONE_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/PavingStones072/PavingStones072_Color.jpg
+map_Kd textures/cc0textures/PavingStones072/PavingStones072_Color.jpg
+Ni 1
+illum 2
+
+newmtl BRIDGE_DEFAULT_0
+Ns 92.156863
+Ka 0.2509804 0.2509804 0.2509804
+Kd 0.2509804 0.2509804 0.2509804
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1
+illum 2
+
+newmtl MAT_6_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Asphalt010/Asphalt010_Color.png
+map_Kd textures/cc0textures/Asphalt010/Asphalt010_Color.png
+Ni 1
+illum 2
+
+newmtl MAT_6_1
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka -clamp on textures/road_arrow_through_right.png
+map_Kd -clamp on textures/road_arrow_through_right.png
+Ni 1
+illum 2
+
+newmtl BUILDING_DEFAULT_0
+Ns 92.156863
+Ka 0.5019608 0.4509804 0.27450982
+Kd 0.5019608 0.4509804 0.27450982
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Plaster002/Plaster002_Color.jpg
+map_Kd textures/cc0textures/Plaster002/Plaster002_Color.jpg
+Ni 1
+illum 2
+
+newmtl ROOF_DEFAULT_0
+Ns 92.156863
+Ka 0.4 0.0 0.0
+Kd 0.4 0.0 0.0
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/RoofingTiles010/RoofingTiles010_Color.jpg
+map_Kd textures/cc0textures/RoofingTiles010/RoofingTiles010_Color.jpg
+Ni 1
+illum 2
+
+newmtl GRASS_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Ground003/Ground003_Color.jpg
+map_Kd textures/cc0textures/Ground003/Ground003_Color.jpg
+Ni 1
+illum 2
+
+newmtl GARAGE_DOOR_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/DE20F1GarageDoor00001.jpg
+map_Kd textures/DE20F1GarageDoor00001.jpg
+Ni 1
+illum 2
+
+newmtl EARTH_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Ground042/Ground042_Color.jpg
+map_Kd textures/cc0textures/Ground042/Ground042_Color.jpg
+Ni 1
+illum 2
+
+newmtl WATER_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/P1140080E_Water.jpg
+map_Kd textures/P1140080E_Water.jpg
+Ni 1
+illum 2
+
+newmtl PITCH_SOCCER_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/Grass-2048.JPG
+map_Kd textures/Grass-2048.JPG
+Ni 1
+illum 2
+
+newmtl PITCH_SOCCER_1
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka -clamp on textures/pitchSoccer.png
+map_Kd -clamp on textures/pitchSoccer.png
+Ni 1
+illum 2
+
+newmtl PITCH_BEACHVOLLEYBALL_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Ground033/Ground033_Color.jpg
+map_Kd textures/cc0textures/Ground033/Ground033_Color.jpg
+Ni 1
+illum 2
+
+newmtl PITCH_BEACHVOLLEYBALL_1
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka -clamp on textures/pitchBeachvolleyball.png
+map_Kd -clamp on textures/pitchBeachvolleyball.png
+Ni 1
+illum 2
+
+newmtl SCRUB_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka Grass-2048.JPG
+map_Kd Grass-2048.JPG
+Ni 1
+illum 2
+
+newmtl GLASS_WALL_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Facade005/Facade005_Color.jpg
+map_Kd textures/cc0textures/Facade005/Facade005_Color.jpg
+Ni 1
+illum 2
+
+newmtl GLASS_ROOF_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Facade005/Facade005_Color.jpg
+map_Kd textures/cc0textures/Facade005/Facade005_Color.jpg
+Ni 1
+illum 2
+
+newmtl TERRAIN_DEFAULT_0
+Ns 92.156863
+Ka 0.5019608 0.5019608 0.5019608
+Kd 0.5019608 0.5019608 0.5019608
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+map_Ka textures/cc0textures/Ground003/Ground003_Color.jpg
+map_Kd textures/cc0textures/Ground003/Ground003_Color.jpg
+Ni 1
+illum 2
+
