@@ -31,7 +31,7 @@ def calculate_avoidance_vector(drone_pos, obstacles, avoidance_radius=5):
     
     return avoidance_vector
 
-def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_collisions=True, initiate_landing=False):
+def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_collisions=True, sensitivity=5):
     """
     Apply forces to the drone to move toward a target position while avoiding obstacles.
 
@@ -49,17 +49,11 @@ def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_colli
     movement_vector = np.array(target_pos) - np.array(drone_pos)
     if (movement_vector != np.zeros(3)).all():
         movement_vector = movement_vector / np.linalg.norm(movement_vector) * speed
-
-    # If landing mode is enabled, slow the drone's descent
-    if initiate_landing:
-        landing_speed = 10  # You can adjust this to control the landing speed
-        movement_vector[2] = -landing_speed  # Lower the drone in the Z-axis (vertical)
-
     
 
     # Calculate avoidance vector based on nearby obstacles
     if avoid_collisions:
-        avoidance_vector = calculate_avoidance_vector(drone_pos, obstacles)*10
+        avoidance_vector = calculate_avoidance_vector(drone_pos, obstacles)*sensitivity
         print("movement vector = " + str(movement_vector))
     else:
         avoidance_vector = np.zeros(3)
@@ -71,12 +65,4 @@ def apply_motion_planning(drone_id, target_pos, obstacles, speed=50, avoid_colli
 
     # Apply the calculated force to the drone
     p.applyExternalForce(drone_id, -1, forceObj=force, posObj=drone_pos, flags=p.WORLD_FRAME)
-
-    # if initiate_landing:
-    #     if drone_pos[2] <= 0.5:  # If the drone is very close to the ground
-    #         print("Drone has landed.")
-    #         # Stop the drone from moving further
-    #         p.resetBaseVelocity(drone_id, linearVelocity=[0, 0, 0], angularVelocity=[0, 0, 0])
-    #         p.resetBasePositionAndOrientation(drone_id, [drone_pos[0], drone_pos[1], 0], [0, 0, 0, 1])  # Set the height to 0 (ground level)    
-        
 

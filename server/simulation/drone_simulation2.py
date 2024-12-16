@@ -18,7 +18,7 @@ import sys
 
 
 class Drone:
-    def __init__(self, drone_id, start_position, radius, altitude, speed, sensing_radius):
+    def __init__(self, drone_id, start_position, radius, altitude, speed, sensing_radius, sensitivity=5):
         self.drone_id = drone_id
         self.position = start_position
         self.radius = radius
@@ -26,6 +26,7 @@ class Drone:
         self.speed = speed
         self.center_position = [random.uniform(-10, 10), random.uniform(-10, 10), self.altitude]  # Random center
         self.sensing_radius = sensing_radius
+        self.sensitivity = sensitivity
         
         # Create the translucent red sphere to visualize the drone
         self.sphere_id = self.create_red_sphere(start_position)
@@ -53,14 +54,14 @@ class Drone:
     def getPos(self):
         return self.position
 
-    def update_position(self, current_time, drones, obstacles, target_position, avoid_collisions,initiate_landing):
+    def update_position(self, current_time, drones, obstacles, target_position, avoid_collisions):
        
         # Gather positions of other drones to avoid collisions
         other_drone_positions = [d.getPos() for d in drones if d.getID() != self.drone_id]
         nearby_obstacles = self.get_nearby_obstacles(obstacles, other_drone_positions)
 
         # Use motion planning to move towards the target while avoiding obstacles, including other drones
-        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, self.speed, avoid_collisions=avoid_collisions, initiate_landing=initiate_landing)
+        apply_motion_planning(self.drone_id, target_position, nearby_obstacles, self.speed, avoid_collisions=avoid_collisions)
 
         # Update the drone's position
         self.position = p.getBasePositionAndOrientation(self.drone_id)[0]
@@ -118,8 +119,9 @@ class DroneSimulation:
         # Parameters
         self.radius = 5
         self.altitude = 2
-        self.speed = 50
+        self.speed = 100
         self.sensing_radius = 2
+        self.sensitivity = 10
 
         self.avoid_collisions = avoid_collisions
 
@@ -249,7 +251,7 @@ class DroneSimulation:
             
             radius = random.uniform(3, 6)
             speed = random.uniform(50, 100)
-            drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, self.sensing_radius)
+            drone = Drone(drone_id, [x_offset, y_offset, 1], radius, 2, speed, self.sensing_radius, self.sensitivity)
             drones.append(drone)
             drone_ids.append(drone_id)
 
@@ -475,12 +477,12 @@ class DroneSimulation:
                         t_y_prime = waypoints["lats"][thisI+1]
                         t_z_prime = 1
                         target_position = np.array([t_x_prime,t_y_prime,t_z_prime])
-                        drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions, False)
+                        drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions)
                         i_bank[id] += 1
 
                     else:
                         print("Continuing motion to waypoint")
-                        drone.update_position(current_time, self.drones, self.obstacles, current_destination_position, self.avoid_collisions, False)
+                        drone.update_position(current_time, self.drones, self.obstacles, current_destination_position, self.avoid_collisions)
 
                     
                     # keep track of real drone position
@@ -495,16 +497,16 @@ class DroneSimulation:
                 #     drone.update_position(current_time, self.drones, self.obstacles, target_position, self.avoid_collisions, True)
 
             # Delay for simulation timing
-            time.sleep(1/240)
+            # time.sleep(1/240)
 
-            if current_time > 10:  
+            if current_time > 20:  
                 break
            
         # Plot the flooded areas after the simulation ends
         flooded = self.converted_flooded_coordinates(self.flooded_coordinates)
         converted_floods = self.convert_floods(flooded)
 
-        self.send_flood_data(converted_floods)
+        # self.send_flood_data(converted_floods)
         self.plot_flooded_areas()
         self.plot_drone_paths(real_paths)
         # print(real_paths)
@@ -562,10 +564,10 @@ def real_demo(api_url, avoid_collisions=True):
 if __name__ == "__main__":
 
     avoid_collisions = True
-    # rice_demo(do_collision_checking)
+    rice_demo(avoid_collisions)
 
     api_url = "http://168.5.58.43:5000/api/v1/"
-    real_demo(api_url, avoid_collisions)
+    # real_demo(api_url, avoid_collisions)
 
 
 
