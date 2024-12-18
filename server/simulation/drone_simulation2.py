@@ -562,10 +562,10 @@ def real_demo(api_url, avoid_collisions=True):
 if __name__ == "__main__":
 
     avoid_collisions = True
-    # rice_demo(do_collision_checking)
+    rice_demo(avoid_collisions)
 
     api_url = "http://168.5.58.43:5000/api/v1/"
-    real_demo(api_url, avoid_collisions)
+    # real_demo(api_url, avoid_collisions)
 
 
 
