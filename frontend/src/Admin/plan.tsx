@@ -10,13 +10,14 @@ export function usePlan(settings: AppSettings): [React.ReactNode, React.ReactNod
     };
     let controller = null;
     let ui = null;
+    const COLORS: React.CSSProperties['color'][] = ['red', 'green', 'blue', 'orange', 'brown'];
     if (plan) {
         controller = <>
-            {Object.entries(plan).map(([k, v]) => (
+            {Object.entries(plan).map(([k, v], i) => (
                 <Polyline
                     key={k}
                     positions={v.positions}
-                    color='red'
+                    color={COLORS[i%COLORS.length]}
                 />
             ))}
         </>;
