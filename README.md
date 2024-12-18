@@ -41,7 +41,7 @@ npm install
 ### **Run the Drone Simulation**  
 From the project’s root directory, start the Python simulation:  
 ```bash  
-python simulation.py  
+python drone_simulation2.py  
 ```  
 
 ### **Run the Web App**  
