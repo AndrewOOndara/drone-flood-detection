@@ -1,0 +1,25 @@
+<robot name="drone">
+    <link name="base_link">
+        <!-- Visual representation of the model with texture -->
+        <visual>
+            <geometry>
+                <!-- Path to the STL file -->
+                <mesh filename="/Users/andrewondara/drone-flood-detection/server/simulation/riceu_env.obj" scale="1.0 1.0 1.0" />
+            </geometry>
+        </visual>
+
+        <!-- Collision representation for physics simulation -->
+        <collision>
+            <geometry>
+                <!-- Path to the STL file for collision geometry -->
+                <mesh filename="/Users/andrewondara/drone-flood-detection/server/simulation/riceu_env.obj" scale="1.0 1.0 1.0" />
+            </geometry>
+        </collision>
+
+        <!-- Inertial properties of the link (Set to zero or remove to avoid falling) -->
+        <inertial>
+            <mass value="0.0" /> <!-- Zero mass to prevent physics simulation forces -->
+            <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0" /> <!-- Zero inertia -->
+        </inertial>
+    </link>
+</robot>

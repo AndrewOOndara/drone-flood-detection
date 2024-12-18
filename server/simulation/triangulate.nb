@@ -1,0 +1,270 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 14.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      9579,        262]
+NotebookOptionsPosition[      8356,        235]
+NotebookOutlinePosition[      8805,        252]
+CellTagsIndexPosition[      8762,        249]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"transformCoord", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "latOffset_", ",", " ", "lonOffset_", ",", " ", "rot_", ",", "scale_"}],
+       "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lat_", ",", " ", "lon_"}], "}"}]}], "]"}], " ", ":=", " ", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"(", GridBox[{
+        {
+         RowBox[{"Cos", "[", "rot", "]"}], 
+         RowBox[{"Sin", "[", "rot", "]"}]},
+        {
+         RowBox[{"-", 
+          RowBox[{"Sin", "[", "rot", "]"}]}], 
+         RowBox[{"Cos", "[", "rot", "]"}]}
+       }], ")"}], ".", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"lat", " ", "-", " ", "latOffset"}], ",", " ", 
+       RowBox[{"lon", "-", "lonOffset"}]}], "}"}]}], " ", "*", " ", 
+    "scale"}]}], ";"}]], "Input",
+ CellChangeTimes->{{3.942280841801918*^9, 3.942280871902763*^9}, {
+  3.942280926607582*^9, 3.942281181906608*^9}, {3.942282010300939*^9, 
+  3.942282040567615*^9}, {3.9422829112528043`*^9, 3.942282914828321*^9}},
+ CellLabel->"In[62]:=",ExpressionUUID->"f2f837de-e2f3-49e2-9036-fc46236eeefb"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"inputs", " ", "=", " ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"29.717258`", ",", 
+       RowBox[{"-", "95.404235`"}]}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"29.721688`", ",", 
+       RowBox[{"-", "95.399032`"}]}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"29.719051`", ",", 
+       RowBox[{"-", "95.403246`"}]}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"29.719008`", ",", 
+       RowBox[{"-", "95.400215`"}]}], "}"}]}], "}"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"outputs", " ", "=", " ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "0"}], ",", " ", "0"}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "5"}], ",", "5"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "1"}], ",", "2"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "4"}], ",", "2"}], "}"}]}], "}"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.942282642275718*^9, 3.94228266698779*^9}, {
+   3.942283462174394*^9, 3.942283479816418*^9}, {3.942284939870363*^9, 
+   3.942284943698002*^9}, {3.942284986879519*^9, 3.942285060383419*^9}, 
+   3.942285352422584*^9, {3.943480285007015*^9, 3.943480286038492*^9}},
+ CellLabel->"In[63]:=",ExpressionUUID->"5bbd529d-6e17-4de6-ab94-f23ede5022ab"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"dist", "[", 
+   RowBox[{"a_", ",", " ", "b_"}], "]"}], " ", ":=", " ", 
+  RowBox[{
+   RowBox[{"(", 
+    RowBox[{"a", " ", "-", " ", "b"}], ")"}], ".", 
+   RowBox[{"(", 
+    RowBox[{"a", " ", "-", " ", "b"}], ")"}]}]}]], "Input",
+ CellChangeTimes->{{3.942282781472516*^9, 3.942282822416245*^9}},
+ CellLabel->"In[65]:=",ExpressionUUID->"d071692a-1218-4a2f-85bb-703f917023d5"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"distOne", "[", 
+   RowBox[{"params_", ",", " ", "input_", ",", " ", "output_"}], "]"}], " ", ":=",
+   " ", 
+  RowBox[{"dist", "[", 
+   RowBox[{
+    RowBox[{"transformCoord", "[", 
+     RowBox[{"params", ",", " ", "input"}], "]"}], ",", " ", "output"}], 
+   "]"}]}]], "Input",
+ CellChangeTimes->{{3.942282880037185*^9, 3.94228292599389*^9}},
+ CellLabel->"In[66]:=",ExpressionUUID->"0d727b0c-0fa7-4211-96a9-5455d6bbf2be"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Sum", "[", 
+   RowBox[{
+    RowBox[{"distOne", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"latO", ",", " ", "lonO", ",", " ", "rot", ",", " ", "s"}], 
+       "}"}], ",", " ", 
+      RowBox[{"inputs", "[", 
+       RowBox[{"[", "i", "]"}], "]"}], ",", " ", 
+      RowBox[{"outputs", "[", 
+       RowBox[{"[", "i", "]"}], "]"}]}], "]"}], ",", " ", 
+    RowBox[{"{", 
+     RowBox[{"i", ",", " ", "1", ",", " ", 
+      RowBox[{"Length", "[", "inputs", "]"}]}], "}"}]}], "]"}], " ", "/.", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"latO", "->", "29.7"}], ",", " ", 
+    RowBox[{"lonO", "->", " ", 
+     RowBox[{"-", "95.4"}]}], ",", " ", 
+    RowBox[{"rot", "->", " ", 
+     FractionBox[
+      RowBox[{"-", "\[Pi]"}], "2"]}], ",", " ", 
+    RowBox[{"s", "->", " ", "1000"}]}], "}"}]}]], "Input",
+ CellChangeTimes->{{3.9422833866785793`*^9, 3.942283444206114*^9}},
+ CellLabel->"In[67]:=",ExpressionUUID->"22e32300-987e-41a8-a46f-4322dc62407e"],
+
+Cell[BoxData["1226.323562999954`"], "Output",
+ CellChangeTimes->{
+  3.942283408241843*^9, {3.9422834385354137`*^9, 3.942283445259171*^9}, 
+   3.942283482969833*^9, 3.942285066170225*^9, 3.943480290420608*^9},
+ CellLabel->"Out[67]=",ExpressionUUID->"4e510b0d-5d2e-479b-b074-63aebbb249c6"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"FindMinimum", "[", 
+  RowBox[{
+   RowBox[{"Sum", "[", 
+    RowBox[{
+     RowBox[{"distOne", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"latO", ",", " ", "lonO", ",", " ", "rot", ",", " ", "s"}], 
+        "}"}], ",", " ", 
+       RowBox[{"inputs", "[", 
+        RowBox[{"[", "i", "]"}], "]"}], ",", " ", 
+       RowBox[{"outputs", "[", 
+        RowBox[{"[", "i", "]"}], "]"}]}], "]"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"i", ",", " ", "1", ",", " ", 
+       RowBox[{"Length", "[", "inputs", "]"}]}], "}"}]}], "]"}], ",", " ", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"latO", ",", " ", "29.7"}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"lonO", ",", " ", 
+       RowBox[{"-", "95.4"}]}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"rot", ",", " ", 
+       FractionBox[
+        RowBox[{"-", "\[Pi]"}], "2"]}], "}"}], ",", " ", 
+     RowBox[{"{", 
+      RowBox[{"s", ",", " ", "1000"}], "}"}]}], "}"}], ",", " ", 
+   RowBox[{"AccuracyGoal", "->", "6"}], ",", " ", 
+   RowBox[{"PrecisionGoal", "->", "6"}], ",", 
+   RowBox[{"WorkingPrecision", "->", "MachinePrecision"}]}], 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"minRules", " ", "=", " ", 
+   RowBox[{"%", "[", 
+    RowBox[{"[", "2", "]"}], "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.942282936765273*^9, 3.942283049350315*^9}, {
+  3.942283146847046*^9, 3.9422832647418623`*^9}, {3.94228330616616*^9, 
+  3.942283329551126*^9}, {3.9422834238591943`*^9, 3.942283432864641*^9}, {
+  3.9422851808331532`*^9, 3.942285192114017*^9}},
+ CellLabel->"In[68]:=",ExpressionUUID->"08de2af4-9679-48eb-a06f-93ac4570b5b2"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "FindMinimum", "lstol", 
+   "\"The line search decreased the step size to within the tolerance \
+specified by AccuracyGoal and PrecisionGoal but was unable to find a \
+sufficient decrease in the function. You may need more than \\!\\(\\*RowBox[{\
+\\\"MachinePrecision\\\"}]\\) digits of working precision to meet these \
+tolerances.\"", 2, 68, 1, 22343026422748719051, "Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{3.94228506748557*^9, 3.942285206690665*^9, 
+  3.94348029181067*^9},
+ CellLabel->
+  "During evaluation of \
+In[68]:=",ExpressionUUID->"713d4cd7-c3da-41c8-9f41-d2418aacd059"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{"0.030901633219490833`", ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"latO", "\[Rule]", "29.71723906117913`"}], ",", 
+     RowBox[{"lonO", "\[Rule]", 
+      RowBox[{"-", "95.40426381621303`"}]}], ",", 
+     RowBox[{"rot", "\[Rule]", 
+      RowBox[{"-", "1.5000153968566825`"}]}], ",", 
+     RowBox[{"s", "\[Rule]", "1027.5186604073785`"}]}], "}"}]}], 
+  "}"}]], "Output",
+ CellChangeTimes->{
+  3.942283023695302*^9, 3.942283064135536*^9, {3.942283175724271*^9, 
+   3.942283265237052*^9}, {3.942283307117196*^9, 3.942283322814677*^9}, {
+   3.9422834138497963`*^9, 3.942283433198875*^9}, 3.942283484534743*^9, 
+   3.942285067510697*^9, 3.942285206706843*^9, 3.9434802918206453`*^9},
+ CellLabel->"Out[68]=",ExpressionUUID->"942c08fa-e983-4790-ae82-589639ef18cf"]
+}, Open  ]]
+},
+WindowSize->{1063.5, 1006.5},
+WindowMargins->{{-2882.25, Automatic}, {611.25, -832.5}},
+TaggingRules-><|"TryRealOnly" -> False|>,
+FrontEndVersion->"14.0 for Linux x86 (64-bit) (December 12, 2023)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"166306ec-b0eb-4899-8a11-b7dba8c9153f"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 1103, 30, 66, "Input",ExpressionUUID->"f2f837de-e2f3-49e2-9036-fc46236eeefb"],
+Cell[1664, 52, 1361, 38, 52, "Input",ExpressionUUID->"5bbd529d-6e17-4de6-ab94-f23ede5022ab"],
+Cell[3028, 92, 408, 10, 31, "Input",ExpressionUUID->"d071692a-1218-4a2f-85bb-703f917023d5"],
+Cell[3439, 104, 454, 11, 31, "Input",ExpressionUUID->"0d727b0c-0fa7-4211-96a9-5455d6bbf2be"],
+Cell[CellGroupData[{
+Cell[3918, 119, 982, 26, 65, "Input",ExpressionUUID->"22e32300-987e-41a8-a46f-4322dc62407e"],
+Cell[4903, 147, 287, 4, 33, "Output",ExpressionUUID->"4e510b0d-5d2e-479b-b074-63aebbb249c6"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5227, 156, 1662, 42, 119, "Input",ExpressionUUID->"08de2af4-9679-48eb-a06f-93ac4570b5b2"],
+Cell[6892, 200, 642, 13, 47, "Message",ExpressionUUID->"713d4cd7-c3da-41c8-9f41-d2418aacd059"],
+Cell[7537, 215, 803, 17, 33, "Output",ExpressionUUID->"942c08fa-e983-4790-ae82-589639ef18cf"]
+}, Open  ]]
+}
+]
+*)
+
