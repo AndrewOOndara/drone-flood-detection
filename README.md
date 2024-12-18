@@ -1,15 +1,53 @@
-# Getting Started
+# **Multi-Drone Flood Detection Platform**  
 
-This guide will help you set up the project and get started quickly.
+This repository contains the implementation of a multi-drone-based flood detection platform designed to map flooded areas in real-time using computer vision. The platform aims to enhance safety and navigation for users and communities during severe weather.  
 
-## Prerequisites
-Make sure you have the following installed:
-- Python 3.x
-- pip install requirements.txt
+---
 
-## Installation
+## **Getting Started**  
 
-1. **Clone the Repository**:
-   Clone this repository to your local machine using the following command:
-   ```bash
-   git clone https://github.com/AndrewOOndara/drone-flood-detection.git
+Follow this guide to set up and run the project.  
+
+### **Prerequisites**  
+Ensure the following are installed on your system:  
+- Python 3.x  
+- Node.js and npm (for the React frontend)  
+- Git  
+
+### **Installation**  
+
+#### 1. Clone the Repository  
+```bash  
+git clone https://github.com/AndrewOOndara/drone-flood-detection.git  
+cd drone-flood-detection  
+```  
+
+#### 2. Install Python Dependencies  
+```bash  
+pip install -r requirements.txt  
+```  
+
+#### 3. Set Up the React Frontend  
+Navigate to the `react-app` directory:  
+```bash  
+cd react-app  
+npm install  
+```  
+
+---
+
+## **Usage**  
+
+### **Run the Drone Simulation**  
+From the project’s root directory, start the Python simulation:  
+```bash  
+python simulation.py  
+```  
+
+### **Run the Web App**  
+Navigate to the `react-app` directory and start the React development server:  
+```bash  
+cd react-app  
+npm start  
+```  
+The app will run at `http://localhost:3000`.  
