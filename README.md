@@ -1,18 +1,18 @@
 # **Multi-Drone Flood Detection Platform**  
 
-This repository contains the implementation of a multi-drone-based flood detection platform designed to map flooded areas in real-time using computer vision. The platform aims to enhance safety and navigation for users and communities during severe weather.  
+This repository contains the implementation of a multi-drone-based flood detection platform designed to map flooded areas in real-time using computer vision. The platform aims to enhance safety and navigation for users and communities during severe weather.
 
 ---
 
 ## **Getting Started**  
 
-Follow this guide to set up and run the project.  
+Follow this guide to set up and run the project.
 
 ### **Prerequisites**  
-Ensure the following are installed on your system:  
-- Python 3.x  
-- Node.js and npm (for the React frontend)  
-- Git  
+Ensure the following are installed on your system:
+- Python 3.x
+- Node.js and npm (for the React frontend)
+- Git
 
 ### **Installation**  
 
@@ -24,30 +24,52 @@ cd drone-flood-detection
 
 #### 2. Install Python Dependencies  
 ```bash  
-pip install -r requirements.txt  
+pip install -r requirements.txt
 ```  
 
 #### 3. Set Up the React Frontend  
-Navigate to the `react-app` directory:  
+Navigate to the `frontend` directory:  
 ```bash  
-cd react-app  
-npm install  
+cd frontend
+npm install
 ```  
+
+#### 4. Set Up the Admin Dashboard
+Navigate to the `admin-frontend` directory:
+```bash
+cd admin-frontend
+npm install
+```
 
 ---
 
 ## **Usage**  
 
+### **Start the Server**
+```bash
+cd server/api
+python app.py
+```
+
 ### **Run the Drone Simulation**  
-From the project’s root directory, start the Python simulation:  
+From the project’s root directory, start the Python simulation:
+
 ```bash  
 python drone_simulation2.py  
 ```  
 
-### **Run the Web App**  
-Navigate to the `react-app` directory and start the React development server:  
+### **Run the Frontend**
+Navigate to the `frontend` directory and start the React development server:  
 ```bash  
-cd react-app  
+cd frontend
 npm start  
 ```  
 The app will run at `http://localhost:3000`.  
+
+### **Run the admin frontend
+Navigate to the `admin-frontend` directory and start the React development server:  
+```bash  
+cd admin-frontend
+npm start
+```  
+The app will run at `http://localhost:3000`, unless you are already running the user frontend. In that case another port will be picked. Check the terminal output to see the port number.
