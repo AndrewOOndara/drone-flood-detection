@@ -20,7 +20,7 @@ class AppSettings:
     drones: list[drone.Drone]
 
 def default_app_settings() -> AppSettings:
-    return AppSettings(map_lat_lon=(29.717997,-95.400547), map_radius=1500, edges_to_visit=[], drones=[])
+    return AppSettings(map_lat_lon=(29.717997,-95.400547), map_radius=3000, edges_to_visit=[], drones=[])
 
 def dict_to_app_settings(d: dict) -> AppSettings:
     return AppSettings(
@@ -51,7 +51,7 @@ class AppState:
             [(fr, to, True) for (fr, to) in zip(INNER_LOOP_NODES[:-1], INNER_LOOP_NODES[1:])] +
             [(fr, to, True) for (fr, to) in zip(MAIN_STREET_NODES[:-1], MAIN_STREET_NODES[1:])]
         )
-        shuffle(self.settings.edges_to_visit)
+        # shuffle(self.settings.edges_to_visit)
         self.settings.drones = [drone.Drone(drone_id=drone_id, base_station_id=2611472516, battery_life_m=10000) for drone_id in [123, 456, 789]]
         self.load_map()
         # self.flood_db.update_zone((-95.3985, 29.7175, -95.398, 29.72), floodzones.ZoneDbEntry(time=1,drone_id=1,flooded=True,confidence=0.5))
